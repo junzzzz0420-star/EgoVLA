@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ego2lerobot"
+version = "0.1.0"
+description = "Ego2LeRobot: egocentric video preprocessing and LeRobot data pipeline"
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+license = "MIT"
+authors = [{ name = "Ego2LeRobot Contributors" }]
+keywords = ["egocentric-vision", "hand-pose", "camera-tracking", "ray", "pytorch"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "huggingface-hub==1.20.1",
+  "kornia==0.8.2",
+  "numpy==1.26.4",
+  "opencv-python-headless==4.11.0.86",
+  "pandas==2.3.3",
+  "psutil==7.2.2",
+  "pyarrow==24.0.0",
+  "PyYAML==6.0.3",
+  "scipy==1.15.3",
+  "smplx==0.1.28",
+  "tqdm==4.68.3",
+]
+
+[project.optional-dependencies]
+data = [
+  "joblib==1.5.3",
+  "natsort==8.4.0",
+  "nvidia-ml-py==13.610.43",
+  "ray[default]==2.55.1",
+  "timm==1.0.7",
+  "ultralytics==8.4.23",
+]
+
+[project.urls]
+Documentation = "https://github.com/1847540790/Ego2LeRobot#readme"
+Issues = "https://github.com/1847540790/Ego2LeRobot/issues"
+Source = "https://github.com/1847540790/Ego2LeRobot"
+
+[project.scripts]
+ego2lerobot = "cli:main"
+
+[tool.setuptools.packages.find]
+include = ["cli*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = ["third_party"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]

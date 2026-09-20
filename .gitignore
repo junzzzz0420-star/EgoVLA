@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+**/__pycache__/
+
+# Environments and editors
+.env
+.venv/
+.idea/
+.vscode/
+
+# Runtime output
+artifacts/
+output/
+logs/
+ray_results/
+.cache/
+
+# Models
+checkpoints/
+weights/
+# The local infra copy contains MINT-specific changes, while HaWoR is ND-licensed.
+# Keep it available for authorized internal use but out of source distributions.
+third_party/HaWoR/
+third_party/**/.git/
+third_party/**/__pycache__/
+third_party/**/.cache/
+third_party/**/build/
+third_party/**/dist/
+third_party/**/*.egg-info/
+third_party/**/*.ipynb
+third_party/**/*.so
+third_party/**/*.o
+
+# Credentials and common model artifacts
+*.key
+*.pem
+*.p12
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.tar
+*.tar.gz
+wandb/
+
+# Local downloaded weights; keep directory placeholders and small configs
+model/**
+!model/**/
+!model/**/.gitkeep
+!model/**/*.yaml
+!model/**/*.yml
+!model/**/*.json
+!model/**/*.txt
+!model/**/*.md
+
+# Generated example outputs; keep the source videos in examples/egovideo/
+examples/reprocessed/
+examples/filtered/
+examples/pipeline/
+examples/lerobot_pi05/
+
+# macOS
+.DS_Store

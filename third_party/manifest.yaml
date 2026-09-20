@@ -1,0 +1,41 @@
+schema_version: 1
+source_snapshot:
+  repository: wuji-data-infra
+  revision: f198a1ed08b508f7bef7de70ae20b5fe29122997
+  imported_at: 2026-08-16
+components:
+  geocalib:
+    repository: https://github.com/cvg/GeoCalib.git
+    source_path: thirdparty/GeoCalib
+    bundled_source: true
+    bundled_assets: false
+    license: Apache-2.0
+  moge:
+    repository: https://github.com/microsoft/MoGe.git
+    source_path: thirdparty/MoGe
+    bundled_source: true
+    bundled_assets: false
+    license: MIT AND Apache-2.0
+  mega-sam:
+    repository: https://github.com/mega-sam/mega-sam.git
+    source_path: thirdparty/mega-sam
+    bundled_source: true
+    bundled_assets: false
+    license: Apache-2.0
+    local_modifications:
+      - base/droid_slam/depth_video.py
+      - base/droid_slam/droid.py
+      - base/droid_slam/trajectory_filler.py
+  hawor:
+    repository: https://github.com/ThunderVVV/HaWoR.git
+    source_path: thirdparty/HaWoR
+    local_source_available: true
+    bundled_source: false
+    source_release_ignored: true
+    bundled_assets: false
+    license: CC-BY-NC-ND-4.0
+    restricted: true
+    commercial_use_requires_permission: true
+    modified_redistribution_requires_permission: true
+    local_modifications:
+      - scripts/scripts_test_video/hawor_video.py

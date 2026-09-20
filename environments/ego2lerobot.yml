@@ -1,0 +1,11 @@
+name: ego2lerobot
+dependencies:
+  - python=3.10.20
+  - pip=26.1.1
+  - setuptools=82.0.1
+  - wheel=0.46.3
+  - ffmpeg=7.1.1
+  - cmake=4.1.2
+  - ninja=1.13.1
+  - eigen=3.4.0
+  - pkg-config=0.29.2

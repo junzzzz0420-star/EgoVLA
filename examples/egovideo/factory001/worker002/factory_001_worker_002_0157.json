@@ -1,0 +1,11 @@
+{
+  "factory_id": "factory_001",
+  "worker_id": "worker_002",
+  "clip_number": 157,
+  "duration_sec": 148.8,
+  "width": 456,
+  "height": 256,
+  "fps": 30.0,
+  "size_bytes": 9390256,
+  "codec": "h265"
+}
