@@ -435,9 +435,39 @@ class RuntimeScheduler:
         if not workers or self._slam_sentinels_sent:
             return
         if self.plan.upstream_frac is not None:
+            # True single-GPU mode:
+            #
+            # Geo always releases the GPU.
+            #
+            # MoGe and HaWoR cannot both stay alive on one GPU.
+            # Whichever finishes FIRST is released.
+            # Whichever finishes LAST is reused as the tail SLAM worker.
+            #
+            # This prevents the first-finishing upstream actor from grabbing
+            # the only GPU forever while the other upstream actor is pending.
+            if self.plan.n_gpus == 1:
+                promote = False
+
+                if source == 'MoGe':
+                    promote = self.t_haw_done is not None
+                elif source == 'HaWoR':
+                    promote = self.t_moge_done is not None
+
+                if promote:
+                    for w in workers:
+                        promote_released_worker_to_slam(
+                            self.pool, self.queues, self.config, w, source)
+                    print(f'[pipeline]  {source}.')
+                else:
+                    release_workers(workers)
+                    print(f'[pipeline]  {source}.')
+
+                return
+
             release_workers(workers)
             print(f'[pipeline]  {source}.')
             return
+
         for w in workers:
             promote_released_worker_to_slam(
                 self.pool, self.queues, self.config, w, source)

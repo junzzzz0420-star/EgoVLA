@@ -20,6 +20,10 @@ _MEGASAM_ROOT = _ROOT / 'third_party' / 'mega-sam'
 
 
 os.chdir(str(_MEGASAM_ROOT))
+# 优先加载仓库内为当前 GPU（sm_120）编译的 droid_backends/lietorch，
+# 避免 site-packages 里的旧构建（缺 Blackwell 内核）抢先。
+sys.path.insert(0, str(_MEGASAM_ROOT / 'base'))
+sys.path.insert(0, str(_MEGASAM_ROOT / 'base' / 'thirdparty' / 'lietorch'))
 sys.path.insert(0, str(_MEGASAM_ROOT / 'base' / 'droid_slam'))
 sys.path.insert(0, str(_MEGASAM_ROOT / 'UniDepth'))
 

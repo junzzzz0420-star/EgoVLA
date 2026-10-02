@@ -91,8 +91,28 @@ class HaWorWorker:
                       f'{time.perf_counter()-t0:.2f}s)')
             else:
                 from ultralytics import YOLO
-                from lib.pipeline.tools import _resolve_detector_weights
-                self._yolo = YOLO(_resolve_detector_weights())
+                from pathlib import Path as _Path
+
+                _repo_root = _Path(__file__).resolve().parents[2]
+
+                _detector_candidates = [
+                    _repo_root / "model" / "hawor" / "detector.pt",
+                    _repo_root / "third_party" / "HaWoR" / "weights" / "external" / "detector.pt",
+                ]
+
+                _detector_path = next(
+                    (p for p in _detector_candidates if p.exists()),
+                    None
+                )
+
+                if _detector_path is None:
+                    raise FileNotFoundError(
+                        "HaWoR detector.pt not found. Checked: "
+                        + ", ".join(str(p) for p in _detector_candidates)
+                    )
+
+                print(f"[pipeline] HaWoR detector: {_detector_path}")
+                self._yolo = YOLO(str(_detector_path))
                 print(f'[pipeline]  {self._gpu}.')
 
     def _offload_models(self, *, log: bool = False) -> None:

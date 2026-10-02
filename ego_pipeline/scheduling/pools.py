@@ -49,6 +49,12 @@ def start_worker_pool(
         haw_ws = [HaWorWorker.options(num_gpus=plan.upstream_frac).remote(
             use_compile=config.use_compile)
                   for _ in range(plan.n_hawor)]
+
+        # True single-GPU mode:
+        # Do not create a dedicated SlamWorker up front, otherwise it can
+        # grab the only GPU while HaWoR is still waiting.
+        if plan.n_gpus == 1:
+            slam_ws = []
     elif any(frac is not None for frac in (plan.geo_frac, plan.moge_frac, plan.hawor_frac)):
         geo_gpus = plan.geo_frac if plan.geo_frac is not None else 1
         moge_gpus = plan.moge_frac if plan.moge_frac is not None else 1

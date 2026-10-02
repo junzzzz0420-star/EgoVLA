@@ -445,7 +445,7 @@ def run_stage1_only(
             a.img_folder = _abs_path(image_dir)
 
         print('  [Stage 1] detect & track')
-        start, end, seq_folder, _ = detect_track_video(a, hand_det_model=hand_det_model)
+        start, end, seq_folder, _ = detect_track_video(a)
         return dict(start=start, end=end, seq_folder=seq_folder), a
 
 
@@ -458,64 +458,63 @@ def run_stage1_detect(
     ego_crop: bool = True,
     crop_size: int = 256,
 ) -> dict:
-    from lib.pipeline.tools import detect_phase1
+    """
+    Compatibility bridge for the current HaWoR checkout.
 
-    with _hawor_cwd():
-        a = _HaWorArgs()
-        a.video_path = _abs_path(video_path)
-        a.img_focal  = float(img_focal)
-        a.checkpoint = _DEFAULT_HAWOR_CKPT
-        if image_dir is not None:
-            a.img_folder = _abs_path(image_dir)
+    The original Ego2LeRobot split path expected detect_phase1()/track_phase2(),
+    but those functions are absent from the bundled HaWoR version.
+    Reuse the verified official detect_track_video() path via run_stage1_only().
+    """
+    detect_meta, a = run_stage1_only(
+        video_path,
+        img_focal,
+        image_dir,
+        hand_det_model=hand_det_model,
+    )
 
-        file = a.video_path
-        root = os.path.dirname(file)
-        seq  = os.path.basename(file).split('.')[0]
-        seq_folder = f'{root}/{seq}'
-        img_folder = a.img_folder if getattr(a, 'img_folder', None) else f'{seq_folder}/extracted_images'
-        os.makedirs(seq_folder, exist_ok=True)
-        os.makedirs(img_folder, exist_ok=True)
-
-        imgfiles  = list(_jpg_files(img_folder))
-        start_idx = 0
-        end_idx   = len(imgfiles)
-
-        cached_boxes = f'{seq_folder}/tracks_{start_idx}_{end_idx}/model_boxes.npy'
-        if os.path.exists(cached_boxes):
-            print(f'  [Stage 1-detect] skip (cached) {start_idx}_{end_idx}')
-            return {'cached': True, 'args': a,
-                    'seq_folder': seq_folder, 'start': start_idx, 'end': end_idx,
-                    'frame_dets': None}
-
-        os.makedirs(f'{seq_folder}/tracks_{start_idx}_{end_idx}', exist_ok=True)
-        print(f'  [Stage 1-detect] YOLO batch ego_crop={ego_crop} crop_size={crop_size}')
-        frame_dets = detect_phase1(
-            imgfiles, thresh=0.2, hand_det_model=hand_det_model,
-            ego_crop=ego_crop, crop_size=crop_size,
-        )
-        return {'cached': False, 'args': a,
-                'seq_folder': seq_folder, 'start': start_idx, 'end': end_idx,
-                'frame_dets': frame_dets}
+    return {
+        'cached': True,
+        'args': a,
+        'seq_folder': detect_meta['seq_folder'],
+        'start': detect_meta['start'],
+        'end': detect_meta['end'],
+        'frame_dets': None,
+    }
 
 
 def run_stage1_track(detect_result: dict) -> tuple:
-    from lib.pipeline.tools import track_phase2
+    """
+    Compatibility bridge.
 
+    run_stage1_detect() above has already completed detection + tracking,
+    so normally this function only returns the generated metadata.
+    """
     a          = detect_result['args']
     seq_folder = detect_result['seq_folder']
     start_idx  = detect_result['start']
     end_idx    = detect_result['end']
 
-    with _hawor_cwd():
-        if not detect_result['cached']:
+    if not detect_result['cached']:
+        # Keep the old path available only for checkouts which actually
+        # provide track_phase2().
+        from lib.pipeline.tools import track_phase2
+
+        with _hawor_cwd():
             print('  [Stage 1-track] BYTETracker')
-            boxes_, tracks_ = track_phase2(detect_result['frame_dets'], thresh=0.2)
+            boxes_, tracks_ = track_phase2(
+                detect_result['frame_dets'],
+                thresh=0.2,
+            )
             track_dir = f'{seq_folder}/tracks_{start_idx}_{end_idx}'
             os.makedirs(track_dir, exist_ok=True)
-            np.save(f'{track_dir}/model_boxes.npy',  boxes_)
+            np.save(f'{track_dir}/model_boxes.npy', boxes_)
             np.save(f'{track_dir}/model_tracks.npy', tracks_)
 
-    return dict(start=start_idx, end=end_idx, seq_folder=seq_folder), a
+    return dict(
+        start=start_idx,
+        end=end_idx,
+        seq_folder=seq_folder,
+    ), a
 
 
 def run_stage2_from_meta(

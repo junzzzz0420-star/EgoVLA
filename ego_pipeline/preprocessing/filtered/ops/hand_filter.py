@@ -780,6 +780,31 @@ def _yolo_actor_main(
 # 阶段 3：ByteTrack 关联 + 切点计算（CPU 进程池，不占 GPU）
 # ═══════════════════════════════════════════════════════════════════════════════
 
+class _DetAdaptor:
+    """喂给 ultralytics BYTETracker.update 的最小 Results 替身。
+
+    上游 HaWoR 的 lib.pipeline.tools._DetAdaptor 不随权重版本稳定存在；
+    这里按 ultralytics 8.4.x BYTETracker 实际访问的接口实现：
+    init_track 读 .xywh（或 .xywhr）/.conf/.cls 并要求 len()，
+    update 还会对 results 做布尔掩码索引、gmc 路径读 .xyxy。
+    """
+
+    def __init__(self, bboxes, confs, classes):
+        bboxes = np.asarray(bboxes, dtype=np.float32).reshape(-1, 4)
+        self.xyxy = bboxes
+        wh = bboxes[:, 2:4] - bboxes[:, 0:2]
+        cxy = bboxes[:, 0:2] + 0.5 * wh
+        self.xywh = np.concatenate([cxy, wh], axis=1)
+        self.conf = np.asarray(confs, dtype=np.float32).reshape(-1)
+        self.cls = np.asarray(classes, dtype=np.float32).reshape(-1)
+
+    def __len__(self):
+        return len(self.conf)
+
+    def __getitem__(self, idx):
+        return _DetAdaptor(self.xyxy[idx], self.conf[idx], self.cls[idx])
+
+
 def _bytetrack_assoc(frame_dets: list, thresh: float) -> dict:
     """将 detect 结果做 BYTETracker 关联，返回 tracks dict。"""
     from ultralytics.trackers.byte_tracker import BYTETracker
@@ -794,9 +819,6 @@ def _bytetrack_assoc(frame_dets: list, thresh: float) -> dict:
     )
     tracker = BYTETracker(args=cfg, frame_rate=30)
     tracks: dict = {}
-
-    sys.path.insert(0, str(_HAWOR_DIR))
-    from lib.pipeline.tools import _DetAdaptor  # noqa: E402
 
     for t, (bboxes, confs, classes) in enumerate(frame_dets):
         find_right = find_left = False

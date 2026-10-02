@@ -12,6 +12,28 @@ def build_schedule_plan(n_gpus: int | None = None) -> SchedulePlan:
     if n_gpus is None:
         n_gpus = int(ray.cluster_resources().get('GPU', 4))
 
+    # Single-GPU / low-VRAM mode:
+    # All stages share physical GPU 0, but each Ray actor requests the
+    # full GPU. Ray therefore schedules GeoCalib -> MoGe -> HaWoR -> SLAM
+    # sequentially. upstream_frac != None also makes the controller kill
+    # finished upstream actors instead of promoting them to tail-SLAM.
+    if n_gpus == 1:
+        return SchedulePlan(
+            n_gpus=1,
+            n_geo=1,
+            n_moge=1,
+            n_hawor=1,
+            n_slam=1,
+            upstream_frac=1.0,
+            geo_frac=None,
+            hawor_frac=None,
+            moge_frac=None,
+            geo_gpu_ids=[0],
+            moge_gpu_ids=[0],
+            haw_gpu_ids=[0],
+            slam_gpu_ids=[0],
+        )
+
     if n_gpus == 2:
         return SchedulePlan(
             n_gpus=n_gpus,
@@ -19,7 +41,7 @@ def build_schedule_plan(n_gpus: int | None = None) -> SchedulePlan:
             n_moge=1,
             n_hawor=1,
             n_slam=1,
-            upstream_frac=0.33,
+            upstream_frac=1.0,
             geo_frac=None,
             hawor_frac=None,
             moge_frac=None,
@@ -36,10 +58,10 @@ def build_schedule_plan(n_gpus: int | None = None) -> SchedulePlan:
             n_moge=1,
             n_hawor=1,
             n_slam=1,
-            upstream_frac=None,
-            geo_frac=1.0,
-            hawor_frac=1.0,
-            moge_frac=1.0,
+            upstream_frac=1.0,
+            geo_frac=None,
+            hawor_frac=None,
+            moge_frac=None,
             geo_gpu_ids=[0],
             moge_gpu_ids=[1],
             haw_gpu_ids=[2],
