@@ -89,6 +89,22 @@ wget -O model/hawor/detector.pt \
   https://huggingface.co/spaces/rolpotamias/WiLoR/resolve/main/pretrained_models/detector.pt
 ```
 
+## DAS 可视化界面
+
+DAS-Ego 多目录制（mcap）无需记命令行参数，用本地 Web 界面完成全流程：
+
+```bash
+python ego_pipeline/preprocessing/das/app.py
+# 浏览器打开 http://localhost:7861
+```
+
+选录制 → 选模式（单目 / 双目 / 六目）→ 设窗口起点/时长 → 运行：实时日志，
+完成后页面内直接播放 `multiview.mp4`，每次结果独立目录不覆盖。支持粘贴
+Windows 路径一键导入 EgoCap mcap（自动转换为 DAS 兼容目录后即可选运行）。
+数据源自动扫描通过环境变量 `EGO2LEROBOT_MCAP_GLOBS` 配置（分号分隔 glob）。
+界面底层调用的仍是 `run_multiview.py`，与命令行完全等价；命令行用法与
+三模式对比见 [`ego_pipeline/preprocessing/das/README.md`](ego_pipeline/preprocessing/das/README.md)。
+
 ## 预处理
 
 规格化 15 fps、不超过 456×256、60s 切段，再切掉没手、超过两只手、同侧重复的帧。
