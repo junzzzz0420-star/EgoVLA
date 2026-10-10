@@ -89,6 +89,10 @@ def compute_adjusted(parquet, export, seg_start, smooth_sigma=4.0, out=None):
     # ---------------- 读取 DAS 导出（IMU + 相机时间戳 + 外参）
     exp = Path(args.export)
     ts = np.load(exp / 'camera0_timestamps.npz')['log_time_ns'].astype(np.float64)
+    imu_t_raw = np.load(exp / 'imu.npz')['t_log_ns'].astype(np.float64)
+    # EgoCap 等相对时间戳：平移到 IMU 绝对钟，避免窗口匹配全部落空
+    if abs(ts[0]) < 1e15 and abs(imu_t_raw[0]) > 1e15:
+        ts = ts + imu_t_raw[0]
     imu = np.load(exp / 'imu.npz')
     t_imu = imu['t_log_ns'].astype(np.float64)
     w_body = imu['gyro_rad_s'].astype(np.float64)               # rad/s

@@ -55,6 +55,10 @@ def main():
     ap.add_argument('--hfov', type=float, default=120.0)
     ap.add_argument('--task', default=None,
                     help='语义标注（任务描述），写入各 clip 任务文本并按源任务聚合')
+    ap.add_argument('--vlm', action='store_true',
+                    help='动作标注后用 Qwen2.5-VL 抽帧复核各动作段（需已下载模型）')
+    ap.add_argument('--vlm-open', action='store_true',
+                    help='开放动作识别：VLM 自由描述各段+全窗任务；任务框为空时自动采用其任务概括')
     ap.add_argument('--skip-pipeline', action='store_true',
                     help='各目管线已跑过时直接从融合开始')
     args = ap.parse_args()
@@ -172,17 +176,43 @@ def main():
                  '--ref', ref, '--stereo', cams[1] if len(cams) > 1 else ref,
                  '--rig-cal', export, '--videos', rig_in, '--out', fused])
 
-    # 5) 可视化：N 输入面板(各带手部建模) + 世界系 3D（IMU 增强融合轨迹）
+    # 5) 动作标注（规则法四类；--vlm 时追加 Qwen2.5-VL 抽帧复核）——先标注后可视化
+    ref_video_cut = rig_in / f'{ref}_rig_{t0:.2f}s_{t1:.2f}s.mp4'
+    act_args = ['--parquet', fused, '--video', ref_video_cut, '--export', export]
+    if args.vlm:
+        act_args += ['--vlm', 'qwen']
+    if args.vlm_open:
+        act_args += ['--vlm-open']
+    run([PY, HERE / 'label_actions.py', *act_args])
+    act_json = Path(fused).with_suffix('.actions.json')
+    if args.vlm_open and not args.task and act_json.exists():
+        import json as _json
+        try:
+            sug = (_json.loads(act_json.read_text(encoding='utf-8'))
+                   .get('open', {}).get('task_suggest'))
+        except Exception:
+            sug = None
+        if sug:
+            args.task = sug
+            print(f'[multiview] 任务描述（开放识别自动采用）: {sug}', flush=True)
+
+    # 6) 可视化：N 输入面板(各带手部建模) + 世界系 3D（IMU 增强融合轨迹）
+    #    有 .actions.json 时把动作/VLM复核/任务烧进画面顶部语义条。
     #    输出到 <out>/viz_<mode>_<时间戳>/，不覆盖历史，便于跨模式/多次对比。
     ref_video = sorted((out / 'views' / ref).rglob('file-000.mp4'))[0]
     view_args = [f'{c}={sorted((out / "views" / c).rglob("file-000.mp4"))[0]},{parquets[c]}'
                  for c in cams]
-    run([PY, HERE / 'viz_multiview.py', '--tag', args.mode,
-         '--views', *view_args, '--fused', fused,
-         '--export', export, '--seg-start', t0,
-         '--out-root', out / 'viz'])
+    viz_args = [PY, HERE / 'viz_multiview.py', '--tag', args.mode,
+                '--views', *view_args, '--fused', fused,
+                '--export', export, '--seg-start', t0,
+                '--out-root', out / 'viz']
+    if act_json.exists():
+        viz_args += ['--actions', act_json]
+    if args.task:
+        viz_args += ['--task-label', args.task]
+    run(viz_args)
 
-    # 6) 语义标注 + Pi0.5 数据集（--task 提供时写入任务文本并按源任务聚合）
+    # 7) 语义标注 + Pi0.5 数据集（--task 提供时写入任务文本并按源任务聚合）
     if args.task:
         run([PY, HERE / 'label_tasks.py', '--run', out, '--task', args.task])
         pi05_args = ['--from-source-task']
