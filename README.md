@@ -1,4 +1,4 @@
-# Ego2LeRobot
+# EgoVLA
 
 把 Egocentric-100K 这类第一人称视频做成 VLA 训练用的 14 维 state/action LeRobot 数据。
 
