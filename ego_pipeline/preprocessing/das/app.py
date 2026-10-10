@@ -15,8 +15,10 @@ from __future__ import annotations
 
 import glob
 import html
+import os
 import re
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -24,13 +26,14 @@ from pathlib import Path
 
 from flask import Flask, jsonify, request, send_file
 
-REPO = Path(__file__).resolve().parents[3]   # /home/jun/Ego2LeRobot
-PY = Path('/home/jun/miniconda3/envs/ego2lerobot/bin/python')
+REPO = Path(__file__).resolve().parents[3]   # repository root
+PY = Path(os.environ.get('EGO2LEROBOT_PY') or sys.executable)
 RUNNER = Path(__file__).resolve().parent / 'run_multiview.py'
 OUT_ROOT = REPO / 'examples' / 'das_app_runs'
+# Semicolon-separated glob patterns, e.g.
+# EGO2LEROBOT_MCAP_GLOBS='/data/ego/**/*.mcap;/mnt/d/ego/**/*.mcap'
 MCAP_GLOBS = [
-    '/mnt/d/work/ego/$person.1/数采集——简智/**/record_data/**/*.mcap',
-    '/mnt/d/work/ego/LYZ/**/*.mcap',
+    pat for pat in os.environ.get('EGO2LEROBOT_MCAP_GLOBS', '').split(';') if pat
 ]
 
 app = Flask(__name__)

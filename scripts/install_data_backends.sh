@@ -43,6 +43,16 @@ require_component HaWoR
 conda run --name "$ENV_NAME" python -m pip install --no-deps --editable "$THIRD_PARTY_DIR/GeoCalib"
 conda run --name "$ENV_NAME" python -m pip install --no-deps --editable "$THIRD_PARTY_DIR/MoGe"
 
+# The HaWoR runtime config cannot be distributed (CC BY-NC-ND); link it from the
+# locally supplied HaWoR copy instead. detector.pt / hawor.ckpt remain manual
+# downloads documented in docs/installation.md.
+HAWOR_CFG_SRC="$THIRD_PARTY_DIR/HaWoR/weights/hawor/model_config.yaml"
+HAWOR_CFG_DST="$PROJECT_DIR/model/hawor/model_config.yaml"
+if [[ -f "$HAWOR_CFG_SRC" && ! -e "$HAWOR_CFG_DST" ]]; then
+  ln -s "../../third_party/HaWoR/weights/hawor/model_config.yaml" "$HAWOR_CFG_DST"
+  echo "Linked $HAWOR_CFG_DST -> $HAWOR_CFG_SRC"
+fi
+
 cat <<'NEXT'
 
 Bundled source backends are registered. Model assets are intentionally absent.

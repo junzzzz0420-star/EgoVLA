@@ -50,6 +50,10 @@ third_party/**/*.o
 *.tar.gz
 wandb/
 
+# MANO files are registration-gated and must never be redistributed; supply
+# them locally per docs/installation.md
+assets/mano/**/*.pkl
+
 # Local downloaded weights; keep directory placeholders and small configs
 model/**
 !model/**/
@@ -59,6 +63,9 @@ model/**
 !model/**/*.json
 !model/**/*.txt
 !model/**/*.md
+# HaWoR config is CC BY-NC-ND; install_data_backends.sh links it from the
+# locally supplied third_party/HaWoR copy instead of distributing a copy
+model/hawor/model_config.yaml
 
 # Generated example outputs; keep the source videos in examples/egovideo/
 examples/reprocessed/

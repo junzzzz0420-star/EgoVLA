@@ -95,7 +95,8 @@ def stereo_scale(ref_view, stereo_cal_dir, video_dir, ref_cam, stereo_cam,
                  conf_thr=0.0):
     """三角化双腕求参考目单目世界 → 米制 的尺度（返回 descale=1/s0）。"""
     from ultralytics import YOLO
-    model = YOLO('/home/jun/Ego2LeRobot/model/hawor/detector.pt')
+    repo_root = Path(__file__).resolve().parents[3]
+    model = YOLO(str(repo_root / 'model' / 'hawor' / 'detector.pt'))
     Ks = {}
     for cam in (ref_cam, stereo_cam):
         rect_json = glob.glob(f'{stereo_cal_dir}/{cam}_rect.mp4.json')

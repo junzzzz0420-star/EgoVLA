@@ -48,9 +48,9 @@ python -m cli doctor --profile data --strict
 source .venv/bin/activate   # 或直接用 .venv/bin/python
 
 export TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1
-export EGO2LEROBOT_RAY_TMP=/data/luogz/tmp/ray
-export TORCH_HOME=/data/luogz/cache/torch
-export TRITON_CACHE_DIR=/data/luogz/cache/triton
+export EGO2LEROBOT_RAY_TMP=$HOME/ego2lerobot_cache/ray
+export TORCH_HOME=$HOME/ego2lerobot_cache/torch
+export TRITON_CACHE_DIR=$HOME/ego2lerobot_cache/triton
 export EGO2LEROBOT_GPU_ALLOC_GB=120
 export RAY_local_fs_capacity_threshold=0.99
 export PYTHONUNBUFFERED=1
@@ -58,7 +58,7 @@ export PYTHONUNBUFFERED=1
 python -m cli doctor --profile data --strict
 ```
 
-权重不随仓库分发，放到 `model/` 后可用 `python -m cli doctor --profile data --strict` 检查。HaWoR 源码放到 `third_party/HaWoR/`。细节见 [`docs/installation.md`](docs/installation.md)。
+权重不随仓库分发，放到 `model/` 后可用 `python -m cli doctor --profile data --strict` 检查。HaWoR 源码放到 `third_party/HaWoR/`。**MANO 手模型文件不随仓库分发**：需在 [MANO 官网](https://mano.is.tue.mpg.de/) 注册并接受其许可后自行下载，放置方式见 [`docs/installation.md`](docs/installation.md)。细节见 [`docs/installation.md`](docs/installation.md)。
 
 | 权重 | 本地路径 | 下载 |
 | --- | --- | --- |
