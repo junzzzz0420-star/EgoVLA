@@ -1,0 +1,136 @@
+{
+  "codebase_version": "v2.1",
+  "robot_type": "human_ego_pseudo_bimanual",
+  "total_episodes": 4,
+  "total_frames": 409,
+  "total_tasks": 1,
+  "total_videos": 4,
+  "total_chunks": 1,
+  "chunks_size": 1000,
+  "fps": 15.0,
+  "splits": {
+    "train": "0:4"
+  },
+  "data_path": "data/chunk-{episode_chunk:03d}/episode_{episode_index:06d}.parquet",
+  "video_path": "videos/chunk-{episode_chunk:03d}/{video_key}/episode_{episode_index:06d}.mp4",
+  "features": {
+    "observation.images.ego": {
+      "dtype": "video",
+      "shape": [
+        256,
+        456,
+        3
+      ],
+      "names": [
+        "height",
+        "width",
+        "channel"
+      ],
+      "video_info": {
+        "video.is_depth_map": false,
+        "video.fps": 15.0,
+        "video.codec": "avc1",
+        "video.pix_fmt": "yuv420p",
+        "has_audio": false
+      }
+    },
+    "observation.state": {
+      "dtype": "float32",
+      "shape": [
+        14
+      ],
+      "names": [
+        "lx",
+        "ly",
+        "lz",
+        "lrx",
+        "lry",
+        "lrz",
+        "left_gripper",
+        "rx",
+        "ry",
+        "rz",
+        "rrx",
+        "rry",
+        "rrz",
+        "right_gripper"
+      ]
+    },
+    "action": {
+      "dtype": "float32",
+      "shape": [
+        14
+      ],
+      "names": [
+        "dlx",
+        "dly",
+        "dlz",
+        "dlrx",
+        "dlry",
+        "dlrz",
+        "left_gripper",
+        "drx",
+        "dry",
+        "drz",
+        "drrx",
+        "drry",
+        "drrz",
+        "right_gripper"
+      ]
+    },
+    "observation.hand_valid": {
+      "dtype": "bool",
+      "shape": [
+        2
+      ],
+      "names": [
+        "left",
+        "right"
+      ]
+    },
+    "episode_index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ],
+      "names": null
+    },
+    "frame_index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ],
+      "names": null
+    },
+    "index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ],
+      "names": null
+    },
+    "task_index": {
+      "dtype": "int64",
+      "shape": [
+        1
+      ],
+      "names": null
+    },
+    "timestamp": {
+      "dtype": "float32",
+      "shape": [
+        1
+      ],
+      "names": null
+    }
+  },
+  "repo_id": "local/ego-pi05-bimanual",
+  "action_mode": "absolute",
+  "task_prompt": "hand manipulation on the desk",
+  "task_prompt_placeholder": "<vlm_task_prompt>",
+  "ee_layout": {
+    "state": "absolute first-camera-frame EE [xyz, rotvec, gripper] left then right; rotvec is palm-out / jaw-open / finger-forward, not raw MANO",
+    "action_relative": "next-minus-current EE; gripper is next absolute value",
+    "action_absolute": "next-frame absolute EE, matching 0908_video storage style"
+  }
+}

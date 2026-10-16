@@ -139,6 +139,15 @@ Windows 路径一键导入 EgoCap mcap（自动转换为 DAS 兼容目录后即�
 原视频见 [`rig6_multiview.mp4`](docs/assets/das/rig6_multiview.mp4)、[`pi05_episode.mp4`](docs/assets/das/pi05_episode.mp4)；
 三模式完整对比数据（跨目配准残差、尺度收敛等）见 `ego_pipeline/preprocessing/das/README.md`。
 
+以上自采数据的示例产物**随仓库分发，克隆即得**：
+
+| 目录 | 内容 |
+| --- | --- |
+| [`examples/das_compare/`](examples/das_compare/) | mono / stereo / rig6 三模式同窗对比完整产物：各模式 `multiview.mp4`、指标 `metrics.npz`、帧快照、融合 `stereo_fused.parquet` |
+| [`examples/das_pi05_preview/`](examples/das_pi05_preview/) | 自采录制端到端产出的一个完整 Pi0.5 训练 episode（lerobot_v3 格式）：`data/` state/action parquet、`meta/` 元数据、`videos/` 观测视频 |
+
+原始 mcap 录制与更大规模的数据集不随 git 分发。
+
 ## 预处理
 
 规格化 15 fps、不超过 456×256、60s 切段，再切掉没手、超过两只手、同侧重复的帧。
