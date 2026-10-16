@@ -1,10 +1,24 @@
 # EgoVLA
 
-把 Egocentric-100K 这类第一人称视频做成 VLA 训练用的 14 维 state/action LeRobot 数据。
+把第一人称视频变成 VLA 训练数据：**世界坐标系双手末端 14-DoF state/action**，
+`lerobot_v3` / Pi0.5 格式。一条管道，两类输入：
 
-路径：规格化 → YOLO 手部过滤 → GeoCalib → MoGe + HaWoR → MegaSaM → 世界系转换与轨迹清理 → `lerobot_v3` → Pi0.5 14 维格式。
+**自采数据（主线）**——ros bag（mcap）多目鱼眼 + IMU 头戴录制，从数据采集到训练数据集全链打通：
 
-下面命令用仓库 [`examples/egovideo/`](examples/egovideo/) 里的 3 条 Egocentric-100K 视频做端到端示例。
+> mcap 解包与**视频/IMU 时间对齐**（共同 log 时钟）→ 鱼眼去畸变 → **YOLO 手部过滤** →
+> **GeoCalib** 相机估计 → **MoGe** 深度 + **HaWoR** 手部建模 → **MegaSaM** SLAM →
+> 多目融合（Umeyama 跨目配准 + 立体三角化度量尺度）→ IMU 增强（重力对齐 + 陀螺去抖）→
+> 世界系 14DoF 轨迹清理 → `lerobot_v3` → **Pi0.5 14 维格式**
+
+**公共数据集**（Egocentric-100K 等 ego 视频）：
+
+> 规格化 → YOLO 手部过滤 → GeoCalib → MoGe + HaWoR → MegaSaM → 世界系转换与轨迹清理 → `lerobot_v3` → Pi0.5 14 维格式
+
+自采数据示例**克隆即得**（见 [`examples/`](examples/)）：EgoCap（LYZ）双目录制转换件
+[`examples/egocap_das_export/`](examples/egocap_das_export/)、DAS-Ego 六目三模式对比
+[`examples/das_compare/`](examples/das_compare/)、端到端产出的 Pi0.5 episode
+[`examples/das_pi05_preview/`](examples/das_pi05_preview/)；
+公共数据集示例为 [`examples/egovideo/`](examples/egovideo/) 的 3 条视频（下面的命令用它做演示）。
 
 ## 做什么
 

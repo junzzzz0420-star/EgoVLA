@@ -1,0 +1,24 @@
+{
+  "model": "pinhole",
+  "width": 640,
+  "height": 400,
+  "K": [
+    [
+      576.0,
+      0.0,
+      320.0
+    ],
+    [
+      0.0,
+      576.0,
+      200.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "hfov_deg": null,
+  "note": "EgoCap passthrough (already rectilinear); fallback K"
+}
