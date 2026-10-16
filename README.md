@@ -1,5 +1,7 @@
 # EgoVLA
 
+> 🚀 **新手复现指南**：从零跑通管道与可视化界面的手把手教程（含权重/MANO/HaWoR 放置、自带样本演示）见 [`docs/quickstart.md`](docs/quickstart.md)。
+
 把第一人称视频变成 VLA 训练数据：**世界坐标系双手末端 14-DoF state/action**，
 `lerobot_v3` / Pi0.5 格式。一条管道，两类输入：
 
