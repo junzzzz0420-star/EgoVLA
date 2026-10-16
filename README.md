@@ -11,10 +11,16 @@
 把 ego 视频转成**世界坐标系双手末端 14DoF 轨迹**，用来训练 VLA，再看开环测试。
 
 <p align="center">
-  <img src="docs/assets/ego_source.gif" width="48%" alt="原始 ego 视频">
+  <img src="docs/assets/das/rig6_multiview.gif" width="92%" alt="自采 DAS-Ego 六目重建：六路输入 + 世界系双手 3D">
+  <br>
+  <em>自采数据（DAS-Ego 六目鱼眼 + IMU）：六路输入面板叠加手部建模，下方为 IMU 增强的世界系双手 3D 轨迹</em>
+</p>
+
+<p align="center">
+  <img src="docs/assets/ego_source.gif" width="48%" alt="公共数据集 ego 视频">
   <img src="docs/assets/world_14dof.gif" width="48%" alt="世界坐标系双手末端 14DoF 轨迹">
   <br>
-  <em>左：原始 ego 视频 → 右：世界系双手末端 14DoF 轨迹</em>
+  <em>公共数据集示例（Egocentric-100K）：左：原始 ego 视频 → 右：世界系双手末端 14DoF 轨迹</em>
 </p>
 
 <p align="center">
@@ -104,6 +110,34 @@ Windows 路径一键导入 EgoCap mcap（自动转换为 DAS 兼容目录后即�
 数据源自动扫描通过环境变量 `EGO2LEROBOT_MCAP_GLOBS` 配置（分号分隔 glob）。
 界面底层调用的仍是 `run_multiview.py`，与命令行完全等价；命令行用法与
 三模式对比见 [`ego_pipeline/preprocessing/das/README.md`](ego_pipeline/preprocessing/das/README.md)。
+
+## 自采数据：DAS-Ego 六目 → Pi0.5
+
+同一条链路直接处理自采的 DAS-Ego 六目鱼眼 + IMU 录制（mcap）。单目 / 双目 / 六目
+同一窗口实测对比：
+
+<p align="center">
+  <img src="docs/assets/das/compare_summary.png" width="92%" alt="mono/stereo/rig6 三模式对比">
+  <br>
+  <em>三模式同窗对比（c2a589d7 录制，2.4–7.4s）：多目融合显著降低轨迹抖动</em>
+</p>
+
+| 模式 | EE 位置抖动 | 相对单目 |
+| --- | --- | --- |
+| mono | 0.01096 | — |
+| stereo | 0.00349 | −68% |
+| rig6 | 0.00265 | −76% |
+
+自采数据最终转换出的 Pi0.5 训练 episode（世界系 14DoF state/action + 视频）：
+
+<p align="center">
+  <img src="docs/assets/das/pi05_episode.gif" width="72%" alt="自采数据生成的 Pi0.5 episode 可视化">
+  <br>
+  <em>自采 DAS-Ego 录制 → lerobot_v3 → Pi0.5 格式 episode 可视化</em>
+</p>
+
+原视频见 [`rig6_multiview.mp4`](docs/assets/das/rig6_multiview.mp4)、[`pi05_episode.mp4`](docs/assets/das/pi05_episode.mp4)；
+三模式完整对比数据（跨目配准残差、尺度收敛等）见 `ego_pipeline/preprocessing/das/README.md`。
 
 ## 预处理
 
