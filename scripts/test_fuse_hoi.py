@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""fuse_hoi.py 自动测试（Step 2.3 第四部分，12 项）。用法：
+  python scripts/test_fuse_hoi.py <run_dir>
+"""
+import hashlib
+import json
+import shutil
+import sys
+import tempfile
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ego_pipeline/preprocessing/das'))
+import fuse_hoi
+
+run = Path(sys.argv[1])
+sd = run / 'structured'
+hf = sd / 'hoi_fusion'
+R = []
+ok = lambda n, c: print(('PASS' if c else 'FAIL'), n) or R.append(bool(c))
+
+ann = json.loads((hf / 'hoi_annotations.json').read_text())
+evs = ann['events']
+by_id = {e['event_id']: e for e in evs}
+demo = pd.read_parquet(sd / 'demonstration.parquet')
+ts = demo['timestamp'].to_numpy(float)
+vp = json.loads((sd / 'visual_semantics/visual_predictions.json').read_text())['predictions']
+
+# T1 视觉预测与3D轨迹时间对应：每事件帧范围落在其时间范围内
+ok('T1 时间-轨迹对应', all(
+    ts[np.searchsorted(ts, e['start_time'])] <= e['end_time'] + 1/14
+    and e['start_frame'] <= e['end_frame'] for e in evs))
+
+# T2 左右手独立：每事件单手，双手机制为 bimanual_same_object 标记而非合并
+ok('T2 左右手独立', all(e['hand_side'] in ('left', 'right') for e in evs)
+   and any(e.get('bimanual_same_object') for e in evs))
+
+# T3 双手同物体（hoi_0004/0005 computer mouse）与不同物体（hoi_0000 vs hoi_0001）区分
+pair = [e for e in evs if e['object_category'] == 'computer mouse']
+mouse_same = len(pair) == 2 and pair[0]['hand_side'] != pair[1]['hand_side'] \
+    and all(e.get('bimanual_same_object') for e in pair)
+early = [e for e in evs if e['end_time'] < 3]
+diff_obj = {e['object_category'] for e in early} >= {'手机', '电脑鼠标'}
+ok('T3 双手同物体≠双手各物体', mouse_same and diff_obj)
+
+# T4 重叠 clip 不重复：14 条预测(含5条跨目重复) → 8 事件；无相同(clip,hand,action)双事件
+keys = [(tuple(e['source_clip_ids']), e['hand_side'], e['visual_action']) for e in evs]
+ok('T4 重叠去重', len(evs) == 8 and len(keys) == len(set(keys)))
+
+# T5 相邻不同动作不误合并：clip_0000右手鼠标 与 clip_0002右手鼠标 时间不重叠→独立保留
+e0 = [e for e in evs if e['object_category'] == '电脑鼠标'][0]
+e2 = [e for e in evs if e['object_category'] == 'computer mouse'
+      and e['hand_side'] == 'right'][0]
+ok('T5 相邻动作保留独立', e0['event_id'] != e2['event_id']
+   and e0['end_time'] < e2['start_time'])
+
+# T6 物体未知可正常输出（合成：把一个预测物体置 null）
+tmp = Path(tempfile.mkdtemp())
+shutil.copytree(sd, tmp / 'structured', dirs_exist_ok=True)
+vp2 = json.loads((tmp / 'structured/visual_semantics/visual_predictions.json').read_text())
+vp2['predictions'][0]['object_category'] = None
+(tmp / 'structured/visual_semantics/visual_predictions.json').write_text(
+    json.dumps(vp2, ensure_ascii=False))
+fuse_hoi.build(tmp / 'structured', tmp / 'out')
+unk = json.loads((tmp / 'out/hoi_annotations.json').read_text())['events']
+ok('T6 物体未知正常输出', any(not e['object_category'] for e in unk)
+   and all(e['semantic_action'] for e in unk))
+
+# T7 视觉-3D冲突正确标记（真实：hoi_0000 有 primitive_visual_mismatch）
+ok('T7 冲突标记', any('primitive_visual_mismatch' in e['conflicts'] for e in evs)
+   and all(e['needs_review'] == bool(e['conflicts']) for e in evs))
+
+# T8 invalid 不作为可靠证据（合成：右手某事件帧全 invalid）
+shutil.copytree(sd, tmp / 's2', dirs_exist_ok=True)
+d2 = pd.read_parquet(tmp / 's2/demonstration.parquet')
+d2.loc[90:181, 'right_status'] = 'invalid'
+d2.to_parquet(tmp / 's2/demonstration.parquet', index=False)
+fuse_hoi.build(tmp / 's2', tmp / 'out8')
+ev8 = json.loads((tmp / 'out8/hoi_annotations.json').read_text())['events']
+ok('T8 invalid→low_quality', any('low_quality_invalid_frames' in e['conflicts']
+                                 for e in ev8 if e['hand_side'] == 'right'))
+
+# T9 双向可回溯：evidence 帧/行存在且事件帧范围覆盖引用
+ok('T9 证据可回溯', all(
+    0 <= e['trajectory_rows'][0] <= e['trajectory_rows'][1] < len(demo)
+    and e['evidence_frames']['video'] and e['evidence_frames']['trajectory_rows']
+    for e in evs))
+
+# T10 输入不可变
+h0 = {f: hashlib.md5((sd / f).read_bytes()).hexdigest() for f in
+      ('demonstration.parquet', 'action_segments.json',
+       'visual_context/clip_manifest.json', 'visual_semantics/visual_predictions.json')}
+fuse_hoi.build(sd, hf)
+h1 = {f: hashlib.md5((sd / f).read_bytes()).hexdigest() for f in h0}
+ok('T10 输入不可变', h0 == h1)
+
+# T11 多次运行稳定（剔除时间戳后逐字节一致）
+a1 = (hf / 'hoi_annotations.json').read_text()
+fuse_hoi.build(sd, hf)
+a2 = (hf / 'hoi_annotations.json').read_text()
+g1 = json.loads(a1)['meta']['generated_at']
+g2 = json.loads(a2)['meta']['generated_at']
+ok('T11 重复运行稳定', a1.replace(g1, '') == a2.replace(g2, ''))
+
+# T12 Schema 完整 + 异常输入
+REQ = {'event_id', 'source_clip_ids', 'source_segment_ids', 'start_time', 'end_time',
+       'start_frame', 'end_frame', 'hand_side', 'object_category',
+       'object_instance_local_id', 'visual_action', 'motion_primitives',
+       'semantic_action', 'contact_state', 'trajectory_reference', 'evidence_frames',
+       'alignment_status', 'quality_status', 'conflicts', 'verification_status'}
+ok('T12 Schema 完整', all(REQ <= set(e) for e in evs)
+   and all(e['verification_status'] != 'verified' for e in evs))
+try:
+    fuse_hoi.build(tmp / 'nonexistent', tmp / 'out12')
+    ok('T12b 异常输入报错', False)
+except Exception:
+    ok('T12b 异常输入报错', True)
+
+print('\n总计:', sum(R), '/', len(R), 'PASS')
+sys.exit(0 if all(R) else 1)
