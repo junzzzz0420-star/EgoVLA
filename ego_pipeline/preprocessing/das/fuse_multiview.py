@@ -91,6 +91,33 @@ def wrist_uv(video, model):
     return out
 
 
+def align_len(v, n):
+    """把非参考目对齐到参考目帧数（各目 ffmpeg 重采样偶有 ±1 帧差）。
+
+    多出的帧截断；不足的帧补 NaN 且 ok=False（不参与配准与融合）。"""
+    m = v['n']
+    if m == n:
+        return v
+    print(f'[fuse] 帧数不对齐: {m} vs 参考 {n}，已截断/补无效帧')
+    for key in ('left_p', 'right_p', 'left_R', 'right_R', 'w2c'):
+        a = v[key]
+        if m > n:
+            v[key] = a[:n]
+        else:
+            v[key] = np.concatenate(
+                [a, np.full((n - m, *a.shape[1:]), np.nan, dtype=a.dtype)], axis=0)
+    for key in ('left_ok', 'right_ok'):
+        a = v[key]
+        v[key] = a[:n] if m > n else np.concatenate([a, np.zeros(n - m, bool)], axis=0)
+    for s, a in list(v['kp'].items()):
+        v['kp'][s] = a[:n] if m > n else np.concatenate(
+            [a, np.full((n - m, 21, 3), np.nan, dtype=a.dtype)], axis=0)
+    if m > n:
+        v['df'] = v['df'].iloc[:n].reset_index(drop=True)
+    v['n'] = n
+    return v
+
+
 def stereo_scale(ref_view, stereo_cal_dir, video_dir, ref_cam, stereo_cam,
                  conf_thr=0.0):
     """三角化双腕求参考目单目世界 → 米制 的尺度（返回 descale=1/s0）。"""
@@ -233,10 +260,16 @@ def main():
         views[cam] = load_view(path)
     ref = views[args.ref]
     n = ref['n']
+    for cam, v in views.items():
+        if cam != args.ref:
+            align_len(v, n)
     print(f'[fuse] {len(views)} 目: {sorted(views)}，参考={args.ref}，{n} 帧')
 
     # 1) 度量尺度
     s0, n_used = stereo_scale(ref, args.rig_cal, args.videos, args.ref, args.stereo)
+    if n_used < 3:
+        print(f'[fuse] 警告: 三角化样本仅 {n_used} 个（<3），尺度不可靠，回退 1.0')
+        s0 = 1.0
     print(f'[fuse] 立体尺度: 单目世界 = {s0:.3f} × 米制（{n_used} 个三角化样本）')
 
     # 2) 跨目配准 + 3) 融合

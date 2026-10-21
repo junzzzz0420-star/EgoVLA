@@ -130,6 +130,7 @@ def main():
 
     # 3) 逐目重建管线
     parquets = {}
+    ref = cams[0]
     if not args.skip_pipeline:
         env_export = {'TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD': '1',
                       'EGO2LEROBOT_GPU_ALLOC_GB': '8',
@@ -162,7 +163,6 @@ def main():
             parquets[cam] = sorted((out / 'views' / cam).rglob('file-000.parquet'))[0]
 
     # 4) 融合（单目直接用参考目；被跳过的目不参与；双/六目走融合）
-    ref = cams[0]
     cams = [c for c in cams if c in parquets]          # 剔除无产物视角
     if len(cams) < len(MODE_CAMS[args.mode]):
         print(f'[multiview] 实际参与视角: {cams}', flush=True)
