@@ -1,0 +1,2 @@
+{"episode_index": 0, "source": "views/camera0/camera0_rig_2.00s_17.00s/lerobot_v3", "source_episode_index": 0, "tasks": ["hand manipulation on the desk"], "length": 182}
+{"episode_index": 1, "source": "views/camera1/camera1_rig_2.00s_17.00s/lerobot_v3", "source_episode_index": 0, "tasks": ["hand manipulation on the desk"], "length": 182}
