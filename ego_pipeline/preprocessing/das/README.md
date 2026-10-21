@@ -40,9 +40,59 @@ python ego_pipeline/preprocessing/das/run_multiview.py --mode mono   --mcap ... 
 | `run_multiview.py` | **统一入口**：mono/stereo/rig6 三模式 |
 | `export_mcap.py` | mcap → 各目 mp4 + 时间戳 npz + IMU npz + `calib_cameraN.json`（`--camera all` 导全部 6 目） |
 | `undistort_ds.py` | double-sphere → pinhole 去畸变 |
-| `fuse_multiview.py` | 多目融合：Umeyama 跨目配准 + 立体三角化度量尺度 + 逐帧中值投票 |
+| `fuse_multiview.py` | 多目融合：Umeyama 跨目配准 + 立体三角化度量尺度 + 逐帧中值投票；非参考目自动对齐帧数（±1 帧）；三角化样本 <3 时尺度回退 1.0 |
+| `gap_fill.py` | 融合轨迹短时补全：≤3 帧缺失 SLERP 插值 + `observed/interpolated/invalid` 状态列 |
 | `imu_enhance.py` | IMU 时间基自校准 + 重力对齐 + 陀螺去抖 + 四面板可视化 |
 | `inspect_cameras.py` | 相机朝向检查工具 |
+
+仓库根目录另有 `scripts/audit_trajectory.py`（轨迹质量审计）与
+`scripts/run_gapfill_lyz.sh`（LYZ 双目全链批量：run_multiview → gap_fill → audit）。
+
+## 轨迹质量审计与短时补全（在管线中的位置）
+
+审计与补全的输入不是视频，是 `run_multiview` 的融合产物 `fused.parquet`
+（逐帧双手世界系轨迹表），因此二者插在管道末端：
+
+```text
+ros bag (mcap)
+  │  convert_egocap.py（解包：视频/IMU 解出、时间对齐）
+  ▼
+egocap_das_export/<录制>/           ← 双目视频 + 逐帧时间戳 + IMU(同钟) + 标定
+  │  run_multiview.py（裁窗 → 逐目重建 → 融合）
+  ▼
+<out>/fused.parquet                 ← 待检/待补的轨迹表
+  │  ★ scripts/audit_trajectory.py（体检：哪里缺、哪里跳）
+  │  ★ ego_pipeline/preprocessing/das/gap_fill.py（治疗：≤3 帧小洞插值补全）
+  ▼
+<out>/fused_filled.parquet          ← 含 *_status 状态列，不覆盖原文件
+  │  viz_multiview.py / Pi0.5 导出
+  ▼
+```
+
+三步用法（选数据靠 `--parquet`：精确路径查一段，通配符批量查）：
+
+```bash
+# 1) 体检——覆盖率/连续缺失段/可疑速度与加速度/左右手间距突变/kp21 形变
+python scripts/audit_trajectory.py \
+  --parquet 'examples/das_app_runs/*/fused.parquet' --out-dir examples/trajectory_qc
+#   （界面每次运行的产物都在 examples/das_app_runs/<运行名>/fused.parquet）
+
+# 2) 治疗——≤3 帧缺失段插值补全（位置线性、朝向 SLERP、关节四元数归一化），
+#    每帧输出 left/right_status ∈ {observed, interpolated, invalid}，
+#    补出的帧绝不与真实观测混同；>3 帧的大洞与贴边缺失保持 invalid 不动
+python ego_pipeline/preprocessing/das/gap_fill.py \
+  --parquet <某次运行>/fused.parquet            # 输出 fused_filled.parquet
+
+# 3) 复查——补全前后对比
+python scripts/audit_trajectory.py \
+  --parquet <某次运行>/fused.parquet <某次运行>/fused_filled.parquet \
+  --out-dir <某处>/qc
+```
+
+精度参考（人工挖洞测试，干净段挖 1–3 帧）：位置恢复误差 1.4–2.8 mm、
+旋转 0.12–6.25°，远低于跨目配准残差。注意二者目前是**手动后处理步骤**，
+未挂进 run_multiview 一条龙——界面/命令行跑完出的 viz 与 Pi0.5 基于
+未补全的 fused；需要补全版数据时按上面 2→3 手动执行。
 
 ## 实测效果（c2a589d7 录制，2.4–7.4s 窗口）
 
