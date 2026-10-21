@@ -1,0 +1,18 @@
+{
+  "schema_check": {
+    "total": 14,
+    "all_fields_valid": true
+  },
+  "parse_failures": [],
+  "unknown_object_predictions": 0,
+  "cross_camera_conflicts": [],
+  "duplicates": {
+    "clip_0000_R_0": "clip_0000_L_0",
+    "clip_0002_R_0": "clip_0002_L_0",
+    "clip_0002_R_1": "clip_0002_L_1",
+    "clip_0003_R_0": "clip_0003_L_0",
+    "clip_0003_R_1": "clip_0003_L_1"
+  },
+  "evidence_completeness": true,
+  "immutable_sources_untouched": true
+}
