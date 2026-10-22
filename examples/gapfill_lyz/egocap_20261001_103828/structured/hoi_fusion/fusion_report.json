@@ -12,6 +12,7 @@
     "primitive_visual_mismatch": 2,
     "weak_grasp_evidence": 7,
     "boundary_refined_by_release": 3,
+    "object_vlm_detector_mismatch": 4,
     "time_boundary_mismatch": 6,
     "object_continuity_question": 6
   },

@@ -170,5 +170,30 @@ for e in evs:
         break
 
 print('\nStep2.4 专项:', sum(R[13:]) if len(R) > 13 else 0, '/', len(R) - 13, 'PASS')
-print('\n总计:', sum(R), '/', len(R), 'PASS')
+
+# ================= Step 2.5 专项（grounding 仲裁；期望值从数据推导）====
+gnd_ok = (sd / 'grounding/association_evidence.parquet').exists()
+if gnd_ok:
+    RES = {'resolved', 'vlm_detector_mismatch', 'no_object_near_hand', 'no_consensus'}
+    ok('T20 仲裁三态合法', all(e.get('object_resolution') in RES for e in evs)
+       and all(e['object_detected'] for e in evs if e['object_resolution'] == 'resolved'))
+    ok('T21 mismatch 必送审', all(e['needs_review'] for e in evs
+       if e.get('object_resolution') == 'vlm_detector_mismatch'))
+    kb = [e for e in evs if e['semantic_action'] == 'keyboard_touch_candidate']
+    ok('T22 键盘触碰语义成立', kb and all(
+        e.get('object_detected') == 'keyboard'
+        and e['grasp_evidence']['low_pinch_frame_pct'] < 30 for e in kb))
+    r22 = fl.iloc[60]
+    ok('T23 display 名与事件一致', all(any(
+        str(e.get('object_detected') or e['object_category']) in str(r22[f'{h}_display'])
+        or e['trajectory_rows'][0] > 60 or e['trajectory_rows'][1] < 60
+        for e in evs if e['hand_side'] == h) or '无交互' in str(r22[f'{h}_display'])
+        for h in ('left', 'right')))
+    ok('T24 GT 差异报告存在且诚实', (hf / 'gt_comparison_clip_0002.json').exists()
+       and 'refuted' in json.loads((hf / 'gt_comparison_clip_0002.json').read_text())['metrics']['grasp_claims_correct'])
+    ok('T25 时间映射自检', json.loads((sd / 'grounding/grounding_report.json').read_text())
+       ['time_mapping_selfcheck']['clips_within_hd'])
+else:
+    print('SKIP Step2.5 专项（无 grounding 输入）')
+print(chr(10)+'总计(含2.5):', sum(R), '/', len(R), 'PASS')
 sys.exit(0 if all(R) else 1)

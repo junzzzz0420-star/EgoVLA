@@ -2,12 +2,12 @@
   "meta": {
     "schema_version": "hoi-v1",
     "fusion_rules_version": "v1",
-    "generated_at": "2026-10-22T03:34:28.290112+00:00",
+    "generated_at": "2026-10-22T05:29:55.441320+00:00",
     "inputs_md5": {
-      "examples/gapfill_lyz/egocap_20261001_103828/structured/demonstration.parquet": "63a67043a1e4bb420a9341447d652226",
-      "examples/gapfill_lyz/egocap_20261001_103828/structured/action_segments.json": "75c41c7050745b12e7a4c1218836678f",
-      "examples/gapfill_lyz/egocap_20261001_103828/structured/visual_context/clip_manifest.json": "3bee48a2e00a14072115a3ab6d98cbb2",
-      "examples/gapfill_lyz/egocap_20261001_103828/structured/visual_semantics/visual_predictions.json": "5bec38403f94efc954d311278360a886"
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/demonstration.parquet": "63a67043a1e4bb420a9341447d652226",
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/action_segments.json": "75c41c7050745b12e7a4c1218836678f",
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/visual_context/clip_manifest.json": "3bee48a2e00a14072115a3ab6d98cbb2",
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/visual_semantics/visual_predictions.json": "5bec38403f94efc954d311278360a886"
     },
     "time_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
     "notes": "multimodal fusion CANDIDATES; primitives are auxiliary evidence only; not robot ground truth"
@@ -44,7 +44,7 @@
       "object_instance_local_id": "clip_0000::电脑鼠标",
       "visual_action": "grasp",
       "motion_primitives": [],
-      "semantic_action": "candidate_object_grasp",
+      "semantic_action": "keyboard_touch_candidate",
       "contact_state": "visible_contact",
       "motion_contact_cue": 0.534,
       "grasp_evidence": {
@@ -142,6 +142,37 @@
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "cup": {
+            "n": 1,
+            "dist_median": 2.137,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": null
+          },
+          "keyboard": {
+            "n": 100,
+            "dist_median": 0.623,
+            "iou_median": 0.042,
+            "near_ratio": 0.86,
+            "corr_median": 0.098
+          },
+          "mouse": {
+            "n": 57,
+            "dist_median": 1.606,
+            "iou_median": 0.0,
+            "near_ratio": 0.039,
+            "corr_median": 0.166
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": "keyboard",
+      "object_resolution": "resolved",
+      "semantic_action_before_grounding": "keyboard_touch_candidate",
       "possible_duplicate_of": []
     },
     {
@@ -250,11 +281,35 @@
       },
       "conflicts": [
         "boundary_refined_by_release",
+        "object_vlm_detector_mismatch",
         "time_boundary_mismatch",
         "weak_grasp_evidence"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "keyboard": {
+            "n": 37,
+            "dist_median": 1.006,
+            "iou_median": 0.022,
+            "near_ratio": 0.811,
+            "corr_median": 0.112
+          },
+          "mouse": {
+            "n": 21,
+            "dist_median": 2.787,
+            "iou_median": 0.0,
+            "near_ratio": 0.179,
+            "corr_median": -0.041
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": null,
+      "object_resolution": "vlm_detector_mismatch",
       "possible_duplicate_of": []
     },
     {
@@ -285,7 +340,7 @@
       "object_instance_local_id": "clip_0001::游戏手柄",
       "visual_action": "grasp",
       "motion_primitives": [],
-      "semantic_action": "candidate_object_grasp",
+      "semantic_action": "keyboard_touch_candidate",
       "contact_state": "visible_contact",
       "motion_contact_cue": 0.454,
       "grasp_evidence": {
@@ -429,6 +484,37 @@
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "cup": {
+            "n": 5,
+            "dist_median": 2.188,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": null
+          },
+          "keyboard": {
+            "n": 161,
+            "dist_median": 0.885,
+            "iou_median": 0.055,
+            "near_ratio": 0.957,
+            "corr_median": 0.209
+          },
+          "mouse": {
+            "n": 90,
+            "dist_median": 2.116,
+            "iou_median": 0.0,
+            "near_ratio": 0.046,
+            "corr_median": 0.144
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": "keyboard",
+      "object_resolution": "resolved",
+      "semantic_action_before_grounding": "keyboard_touch_candidate",
       "object_continuity_alt": [
         "游戏手柄",
         "电脑鼠标"
@@ -602,10 +688,41 @@
       },
       "conflicts": [
         "object_continuity_question",
+        "object_vlm_detector_mismatch",
         "time_boundary_mismatch"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "cup": {
+            "n": 5,
+            "dist_median": 1.24,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": null
+          },
+          "keyboard": {
+            "n": 131,
+            "dist_median": 0.998,
+            "iou_median": 0.0,
+            "near_ratio": 0.953,
+            "corr_median": 0.367
+          },
+          "mouse": {
+            "n": 68,
+            "dist_median": 1.48,
+            "iou_median": 0.0,
+            "near_ratio": 0.177,
+            "corr_median": 0.185
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": null,
+      "object_resolution": "vlm_detector_mismatch",
       "object_continuity_alt": [
         "手机",
         "游戏手柄"
@@ -765,11 +882,42 @@
       "conflicts": [
         "boundary_refined_by_release",
         "object_continuity_question",
+        "object_vlm_detector_mismatch",
         "time_boundary_mismatch",
         "weak_grasp_evidence"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "cup": {
+            "n": 3,
+            "dist_median": 1.446,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": null
+          },
+          "keyboard": {
+            "n": 85,
+            "dist_median": 1.074,
+            "iou_median": 0.0,
+            "near_ratio": 0.984,
+            "corr_median": 0.477
+          },
+          "mouse": {
+            "n": 46,
+            "dist_median": 1.461,
+            "iou_median": 0.0,
+            "near_ratio": 0.226,
+            "corr_median": 0.25
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": null,
+      "object_resolution": "vlm_detector_mismatch",
       "object_continuity_alt": [
         "computer mouse",
         "游戏手柄"
@@ -921,11 +1069,42 @@
       "conflicts": [
         "boundary_refined_by_release",
         "object_continuity_question",
+        "object_vlm_detector_mismatch",
         "time_boundary_mismatch",
         "weak_grasp_evidence"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "cup": {
+            "n": 6,
+            "dist_median": 2.611,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": null
+          },
+          "keyboard": {
+            "n": 68,
+            "dist_median": 1.286,
+            "iou_median": 0.0,
+            "near_ratio": 0.918,
+            "corr_median": 0.103
+          },
+          "mouse": {
+            "n": 30,
+            "dist_median": 2.316,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": 0.084
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": null,
+      "object_resolution": "vlm_detector_mismatch",
       "object_continuity_alt": [
         "computer mouse",
         "游戏手柄"
@@ -971,7 +1150,7 @@
         "hold",
         "rotate"
       ],
-      "semantic_action": "candidate_object_rotate",
+      "semantic_action": "keyboard_touch_candidate",
       "contact_state": "no_contact",
       "motion_contact_cue": 0.918,
       "grasp_evidence": {
@@ -1049,6 +1228,30 @@
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "keyboard": {
+            "n": 68,
+            "dist_median": 0.736,
+            "iou_median": 0.026,
+            "near_ratio": 0.986,
+            "corr_median": 0.088
+          },
+          "mouse": {
+            "n": 43,
+            "dist_median": 1.094,
+            "iou_median": 0.0,
+            "near_ratio": 0.146,
+            "corr_median": 0.219
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": "keyboard",
+      "object_resolution": "resolved",
+      "semantic_action_before_grounding": "keyboard_touch_candidate",
       "object_continuity_alt": [
         "computer mouse",
         "键盘"
@@ -1094,7 +1297,7 @@
         "pinch",
         "rotate"
       ],
-      "semantic_action": "candidate_object_rotate",
+      "semantic_action": "keyboard_touch_candidate",
       "contact_state": "no_contact",
       "motion_contact_cue": 1.063,
       "grasp_evidence": {
@@ -1171,6 +1374,30 @@
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "keyboard": {
+            "n": 79,
+            "dist_median": 0.889,
+            "iou_median": 0.0,
+            "near_ratio": 0.976,
+            "corr_median": 0.068
+          },
+          "mouse": {
+            "n": 50,
+            "dist_median": 1.696,
+            "iou_median": 0.0,
+            "near_ratio": 0.11,
+            "corr_median": 0.043
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": "keyboard",
+      "object_resolution": "resolved",
+      "semantic_action_before_grounding": "keyboard_touch_candidate",
       "object_continuity_alt": [
         "computer mouse",
         "键盘"

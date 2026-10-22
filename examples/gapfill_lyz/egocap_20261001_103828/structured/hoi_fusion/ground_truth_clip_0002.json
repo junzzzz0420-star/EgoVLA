@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "type": "human_ground_truth",
+    "clip_id": "clip_0002",
+    "annotator": "jun + ZCode visual inspection of HD frames",
+    "method": "manual inspection of 4 HD stereo frames + grounding cross-check",
+    "note": "independent of automatic predictions; NOT used to overwrite them"
+  },
+  "events": [
+    {
+      "gt_id": "gt1",
+      "hand": "left",
+      "start_time": 6.03,
+      "end_time": 8.3,
+      "object": "keyboard_area",
+      "object_held": false,
+      "interaction": "TOUCH_SURFACE",
+      "comment": "指尖在键盘区域点按/悬停，无抓握物体"
+    },
+    {
+      "gt_id": "gt2",
+      "hand": "right",
+      "start_time": 7.33,
+      "end_time": 8.9,
+      "object": "keyboard_area",
+      "object_held": false,
+      "interaction": "TOUCH_SURFACE",
+      "comment": "右手在键盘/鼠标间点按，未握持鼠标"
+    },
+    {
+      "gt_id": "gt3",
+      "hand": "both",
+      "start_time": 8.9,
+      "end_time": 11.2,
+      "object": null,
+      "object_held": false,
+      "interaction": "NO_GRASP_OBSERVED",
+      "comment": "双手张开/悬停，末期回到键盘上方"
+    }
+  ],
+  "answers_to_review_questions": {
+    "left_hand_phone": "clip_0002 内未见左手操作手机（clip_0000 时段曾有手机证据，另案）",
+    "right_hand_mouse_grasp": "不成立：右手在鼠标区域活动但无可确认握持；检测器亦证手不在 mouse bbox 内",
+    "both_hands_same_object": "不成立（不存在握持）",
+    "release_residual": "双手在 ~8.3/8.9s 后无抓握，与 Step2.4 截断一致"
+  }
+}

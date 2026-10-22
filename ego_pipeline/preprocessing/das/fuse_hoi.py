@@ -70,6 +70,68 @@ def pose_state_series(demo, hand):
     return st, ext_med
 
 
+def ground_events(events, sd: Path):
+    """用 grounding 证据仲裁每事件的物体（保守三态，不强制取最近）。
+
+    规则 v1：排除画面面积 >25% 的“环境类”（laptop 等容器性大框）；
+    通过条件 = 窗口内 dist 中位 <0.95 且 near 帧占比 >0.25；
+    通过 → resolved；有候选但无一通过 → vlm_detector_mismatch（保留 VLM 名）；
+    手附近无任何检出 → no_object_near_hand。键盘 + 弱抓握 → 键盘触碰语义。
+    """
+    gdir = sd / 'grounding'
+    if not (gdir / 'association_evidence.parquet').exists():
+        return events, None
+    a = pd.read_parquet(gdir / 'association_evidence.parquet')
+    tr = pd.read_parquet(gdir / 'object_tracks.parquet')
+    area = (tr.x1 - tr.x0) * (tr.y1 - tr.y0)
+    big = {c for c in COCO_BIG_AREA if
+           (area[tr.cls == c].median() if (tr.cls == c).any() else 0) > 0.25}
+    for e in events:
+        w = a[(a.hand == e['hand_side'])
+              & (a.frame_t >= e['start_time'] - 0.2)
+              & (a.frame_t <= e['end_time'] + 0.2)
+              & (~a.cls.isin(big))]
+        ev = {}
+        for cls, gg in w.groupby('cls'):
+            ev[cls] = {'n': int(len(gg)),
+                       'dist_median': round(float(gg.dist.median()), 3),
+                       'iou_median': round(float(gg.iou.median()), 3),
+                       'near_ratio': round(float(
+                           (gg.near_frames / (gg.near_frames.max() + 1e-6)
+                            if False else gg.near_frames / 30.0).clip(upper=1.0).mean()), 3),
+                       'corr_median': (round(float(gg.move_corr.median()), 3)
+                                       if gg.move_corr.notna().any() else None)}
+        passed = [c for c, v in ev.items()
+                  if v['dist_median'] < 0.95 and v['near_ratio'] > 0.25]
+        e['grounding'] = {'per_class': ev,
+                          'environment_classes_excluded': sorted(big)}
+        if len(passed) == 1:
+            e['object_detected'] = passed[0]
+            e['object_resolution'] = 'resolved'
+        elif ev:
+            e['object_detected'] = None
+            e['object_resolution'] = 'vlm_detector_mismatch'                 if e['object_category'] else 'no_consensus'
+            e['conflicts'] = sorted(set(e['conflicts'] +
+                                        ['object_vlm_detector_mismatch']))
+            e['needs_review'] = True
+        else:
+            e['object_detected'] = None
+            e['object_resolution'] = 'no_object_near_hand'
+            e['conflicts'] = sorted(set(e['conflicts'] + ['no_object_near_hand']))
+            e['needs_review'] = True
+        # 键盘触碰语义：解析到键盘且 3D 抓握证据弱 → 不称 HOLD/GRASP
+        det = e.get('object_detected')
+        if det == 'keyboard' and e.get('grasp_evidence', {}).get(
+                'low_pinch_frame_pct', 100) < 30:
+            e['semantic_action'] = 'keyboard_touch_candidate'
+            e['semantic_action_before_grounding'] = e.get(
+                'semantic_action_before_grounding', e['semantic_action'])
+    return events, big
+
+
+COCO_BIG_AREA = {'laptop', 'tv'}
+
+
 def side_of_seg(seg_id: str) -> str:
     return {'L': 'left', 'R': 'right', 'B': 'both'}[seg_id[0]]
 
@@ -258,6 +320,9 @@ def build(sd: Path, out_dir: Path):
             'needs_review': bool(conflicts),
             'verification_status': 'pending_review'})
 
+    # ---- grounding 物体仲裁（Step 2.5）
+    events, _big = ground_events(events, sd)
+
     # ---- 跨片段物体连续性：同手相邻事件物体跳变（<5s 间隔）→ review
     for hand in ('left', 'right'):
         chain = sorted([e for e in events if e['hand_side'] == hand
@@ -358,7 +423,7 @@ def build(sd: Path, out_dir: Path):
             obj = ''
             for e in kept:
                 if e['hand_side'] == hand and e['trajectory_rows'][0] <= r <= e['trajectory_rows'][1]:
-                    obj = str(e['object_category'])
+                    obj = str(e.get('object_detected') or e['object_category'])
                     break
             core = f'{INTER_CN[i]}' + (f' | {obj}' if obj and i in ('GRASP', 'HOLD') else '')
             disp.append(f'{POSE_CN[p]} | {core}')

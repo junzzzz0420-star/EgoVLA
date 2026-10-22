@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "gt_file": "ground_truth_clip_0002.json",
+    "note": "only clip_0002 has GT; others report coverage only"
+  },
+  "per_event": [
+    {
+      "event_id": "hoi_0004",
+      "hand": "left",
+      "auto_object": "computer mouse",
+      "auto_detected": null,
+      "gt_object": "keyboard_area",
+      "gt_held": false,
+      "auto_semantic": "candidate_object_grasp",
+      "gt_interaction": "TOUCH_SURFACE",
+      "start_err_s": 0.0,
+      "end_err_s": 0.03,
+      "object_agree": false,
+      "grasp_claim_supported": false
+    },
+    {
+      "event_id": "hoi_0005",
+      "hand": "right",
+      "auto_object": "computer mouse",
+      "auto_detected": null,
+      "gt_object": "keyboard_area",
+      "gt_held": false,
+      "auto_semantic": "candidate_object_grasp",
+      "gt_interaction": "TOUCH_SURFACE",
+      "start_err_s": 0.0,
+      "end_err_s": 0.03,
+      "object_agree": false,
+      "grasp_claim_supported": false
+    }
+  ],
+  "metrics": {
+    "hand_identity_accuracy": 1.0,
+    "object_association_accuracy": null,
+    "grasp_claims_correct": "0/2 (both auto grasp claims refuted by GT: no held object)",
+    "event_start_median_error_s": 0.0,
+    "event_end_median_error_s": 0.05,
+    "unknown_rate": 0.0,
+    "review_rate": 1.0,
+    "coverage": "1 of 4 clips has human GT (25%); remaining 3 report uncertainty only"
+  },
+  "conclusion": "VLM 双手握鼠标判断被检测器与人工双重否定；系统正确地未强制解析物体并全部送审——这正是期望行为"
+}

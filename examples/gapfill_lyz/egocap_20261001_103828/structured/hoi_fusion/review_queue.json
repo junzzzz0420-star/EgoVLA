@@ -29,6 +29,7 @@
     "event_id": "hoi_0001",
     "reasons": [
       "boundary_refined_by_release",
+      "object_vlm_detector_mismatch",
       "time_boundary_mismatch",
       "weak_grasp_evidence"
     ],
@@ -88,6 +89,7 @@
     "event_id": "hoi_0003",
     "reasons": [
       "object_continuity_question",
+      "object_vlm_detector_mismatch",
       "time_boundary_mismatch"
     ],
     "evidence": {
@@ -121,6 +123,7 @@
     "reasons": [
       "boundary_refined_by_release",
       "object_continuity_question",
+      "object_vlm_detector_mismatch",
       "time_boundary_mismatch",
       "weak_grasp_evidence"
     ],
@@ -157,6 +160,7 @@
     "reasons": [
       "boundary_refined_by_release",
       "object_continuity_question",
+      "object_vlm_detector_mismatch",
       "time_boundary_mismatch",
       "weak_grasp_evidence"
     ],

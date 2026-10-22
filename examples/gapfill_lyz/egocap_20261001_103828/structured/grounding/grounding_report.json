@@ -1,0 +1,17 @@
+{
+  "time_mapping_selfcheck": {
+    "crop_offset_s": 2.0,
+    "hd_fps": 30.0,
+    "hd_frames": 423,
+    "clips_within_hd": true,
+    "note": "within +/-1 frame rounding tolerance; pixel-verified in Step 2.1"
+  },
+  "hand_frames": 784,
+  "object_detections": {
+    "keyboard": 404,
+    "laptop": 395,
+    "mouse": 225,
+    "cup": 11
+  },
+  "association_rows": 2193
+}
