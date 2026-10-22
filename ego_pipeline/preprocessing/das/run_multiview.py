@@ -57,6 +57,10 @@ def main():
                     help='语义标注（任务描述），写入各 clip 任务文本并按源任务聚合')
     ap.add_argument('--vlm', action='store_true',
                     help='动作标注后用 Qwen2.5-VL 抽帧复核各动作段（需已下载模型）')
+    ap.add_argument('--audit-fill', action='store_true',
+                    help='跑完后审计掉帧（qc 报告）并补 ≤3 帧小洞（fused_filled.parquet）')
+    ap.add_argument('--hoi', action='store_true',
+                    help='生成 HOI 语义审阅视频（中文红框；含 Qwen2.5-VL 推理，约 2-3 分钟/片段）')
     ap.add_argument('--vlm-open', action='store_true',
                     help='开放动作识别：VLM 自由描述各段+全窗任务；任务框为空时自动采用其任务概括')
     ap.add_argument('--skip-pipeline', action='store_true',
@@ -222,6 +226,29 @@ def main():
          '--source', out / 'views' / ref if len(cams) == 1 else out,
          '--output', out / 'pi05', '--action-mode', 'absolute',
          *pi05_args, '--overwrite'], cwd=REPO)
+    # 8) 掉帧检查 + 补帧（--audit-fill）
+    fused_path = Path(fused)
+    filled = fused_path.with_name(fused_path.stem + '_filled.parquet')
+    if args.audit_fill and fused_path.exists():
+        run([PY, HERE / 'gap_fill.py', '--parquet', fused_path])
+        run([PY, REPO / 'scripts/audit_trajectory.py',
+             '--parquet', str(fused_path), str(filled), '--out-dir', out / 'qc'])
+        print('[OK] 掉帧审计+补帧: ' + str(out / 'qc'), flush=True)
+
+    # 9) HOI 语义标注审阅视频（--hoi，中文红框 + 每手就近标注）
+    if args.hoi and fused_path.exists():
+        src = filled if (args.audit_fill and filled.exists()) else fused_path
+        sd = src.parent / 'structured'
+        run([PY, HERE / 'label_structured.py', '--parquet', src])
+        run([PY, HERE / 'prepare_hoi_clips.py', '--structured-dir', sd,
+             '--rig-input', rig_in])
+        run([PY, HERE / 'label_visual.py',
+             '--visual-context', sd / 'visual_context', '--export', export], cwd=HERE)
+        run([PY, HERE / 'fuse_hoi.py', '--structured-dir', sd])
+        run([PY, HERE / 'render_hoi_review.py', '--structured-dir', sd,
+             '--lang', 'cn', '--minimal'])
+        print(f'[OK] HOI 审阅视频(中文红框): {sd}/hoi_fusion/review_videos/', flush=True)
+
     print(f'\n[OK] 成品: {out}/viz/{args.mode}_<时间戳>/multiview.mp4 + {out}/pi05')
 
 

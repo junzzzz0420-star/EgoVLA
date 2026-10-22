@@ -26,6 +26,50 @@ import numpy as np
 import pandas as pd
 
 HAND_COLORS = {'left': (80, 220, 80), 'right': (60, 160, 255)}   # BGR
+HAND_CN = {'left': '左手', 'right': '右手', 'unknown': '未知手'}
+SEM_CN = {
+    'candidate_object_grasp': '抓取', 'candidate_object_transport': '搬运',
+    'candidate_object_rotate': '旋转物体', 'candidate_approach': '接近',
+    'candidate_release': '释放', 'candidate_lift': '提起',
+    'gesture': '手势', 'gesture_with_object_nearby': '手势(附近有物体)',
+    'hand_rotation_no_object_evidence': '手部旋转(无物体证据)',
+    'unknown_action': '未知动作', 'needs_semantic_review': '语义待复核'}
+
+_FONT_CACHE = {}
+def _cjk_font(size=18):
+    import os
+    from PIL import ImageFont
+    if size in _FONT_CACHE:
+        return _FONT_CACHE[size]
+    cands = ([os.environ.get('EGO2LEROBOT_CJK_FONT')] if os.environ.get('EGO2LEROBOT_CJK_FONT') else []) + [
+        str(Path(__file__).resolve().parents[3] / 'assets/fonts/cjk.ttf'),
+        '/mnt/c/Windows/Fonts/msyh.ttc', '/mnt/c/Windows/Fonts/simhei.ttf']
+    for c in cands:
+        try:
+            f = ImageFont.truetype(c, size)
+            _FONT_CACHE[size] = f
+            return f
+        except Exception:
+            continue
+    _FONT_CACHE[size] = False        # 无字体 → 回退英文
+    return False
+
+def put_text(img, text, xy, color_bgr, size=18, lang='en'):
+    """cv2 英文 或 PIL 中文（cv2.putText 不支持 CJK）。"""
+    if lang != 'cn' or all(ord(ch) < 128 for ch in text):
+        cv2.putText(img, text, xy, FONT, size / 40.0,
+                    tuple(int(c) for c in color_bgr), 1, cv2.LINE_AA)
+        return
+    from PIL import Image, ImageDraw
+    f = _cjk_font(size)
+    if f is False:
+        cv2.putText(img, text.encode('ascii', 'replace').decode(), xy, FONT,
+                    size / 40.0, tuple(int(c) for c in color_bgr), 1, cv2.LINE_AA)
+        return
+    pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    d = ImageDraw.Draw(pil)
+    d.text(xy, text, font=f, fill=tuple(reversed(tuple(int(c) for c in color_bgr))))
+    img[:] = cv2.cvtColor(np.asarray(pil), cv2.COLOR_RGB2BGR)
 WARN = (60, 60, 255)
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 BOX_H = 240           # 注释框高度(px)：容纳双手并列各5行
@@ -63,7 +107,8 @@ def hand_lines(e):
     ]
 
 
-def render_clip(clip, events, demo, wrists, clips_dir, out_path, det, fps_hint=15.0):
+def render_clip(clip, events, demo, wrists, clips_dir, out_path, det,
+                lang='cn', minimal=False, fps_hint=15.0):
     caps = {}
     for key, ref_key in (('L', 'left_video_ref'), ('R', 'right_video_ref')):
         ref = clip.get(ref_key)
@@ -103,13 +148,28 @@ def render_clip(clip, events, demo, wrists, clips_dir, out_path, det, fps_hint=1
             x0, y0, x1, y1 = map(int, b)
             cv2.rectangle(img, (x0, y0), (x1, y1), (0, 0, 255), 2)
             e = next((m for m in mains if m['hand_side'] == side), None)
-            label = (f"{side.upper()}: {e['semantic_action']} | "
-                     f"{e['object_category']}" + (" [REVIEW]" if e['needs_review'] else "")
-                     ) if e else f"{side.upper()}: no active event"
-            (tw, th), _ = cv2.getTextSize(label, FONT, 0.42, 1)
-            ty = y0 - 6 if y0 - th - 6 > 0 else y1 + th + 6
+            if lang == 'cn':
+                hand_t = HAND_CN[side]
+                if e:
+                    sem = SEM_CN.get(e['semantic_action'], e['semantic_action'])
+                    label = f"{hand_t}: {sem} | {e['object_category']}" + \
+                            (" [待核验]" if e['needs_review'] else "")
+                else:
+                    label = f"{hand_t}: 无活跃事件"
+                fs = 17
+            else:
+                label = (f"{side.upper()}: {e['semantic_action']} | {e['object_category']}"
+                         + (" [REVIEW]" if e['needs_review'] else "")
+                         ) if e else f"{side.upper()}: no active event"
+                fs = 15
+            fnt = _cjk_font(fs) if lang == 'cn' else None
+            if fnt:
+                bb = fnt.getbbox(label); tw, th = bb[2] - bb[0], bb[3] - bb[1]
+            else:
+                (tw, th), _ = cv2.getTextSize(label, FONT, 0.42, 1)
+            ty = y0 - 8 if y0 - th - 8 > 0 else y1 + th + 8
             cv2.rectangle(img, (x0, ty - th - 4), (x0 + tw + 6, ty + 4), (0, 0, 0), -1)
-            cv2.putText(img, label, (x0 + 3, ty), FONT, 0.42, (0, 0, 255), 1, cv2.LINE_AA)
+            put_text(img, label, (x0 + 3, ty - th - 2), (0, 0, 255), fs, lang)
 
     def overlay(k, fL, fR):
         fR_ = fR if (fR is not None and fR.shape == fL.shape) else np.zeros_like(fL)
@@ -135,7 +195,8 @@ def render_clip(clip, events, demo, wrists, clips_dir, out_path, det, fps_hint=1
             lines.append((f"(+more {other['event_id']} "
                           f"{other['hand_side']}/{str(other['object_category'])!r})",
                           (180, 180, 180), 0.42))
-        draw_box(frame, [l for l in lines if l[0]][:11])
+        if not minimal:
+            draw_box(frame, [l for l in lines if l[0]][:11])
         cv2.putText(frame, 'CAM0 (left eye)', (8, H - 12), FONT, 0.5, (255, 255, 255), 1)
         cv2.putText(frame, 'CAM1 (right eye)', (W2 // 2 + 8, H - 12), FONT, 0.5,
                     (255, 255, 255), 1)
@@ -184,6 +245,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--structured-dir', required=True)
+    ap.add_argument('--lang', choices=('cn', 'en'), default='cn',
+                    help='标注语言（cn 需中文字体，自动回退 en）')
+    ap.add_argument('--minimal', action='store_true', help='不画左上注释框（只留红框+标签+轨迹条）')
     args = ap.parse_args()
     sd = Path(args.structured_dir)
     out_dir = sd / 'hoi_fusion' / 'review_videos'
@@ -212,7 +276,8 @@ def main():
     print(f'[render] 腕部轨迹源: {fused}')
     for clip in clips:
         p = render_clip(clip, events, demo, wrists, clips_dir,
-                        out_dir / f'{clip["clip_id"]}_review.mp4', det)
+                        out_dir / f'{clip["clip_id"]}_review.mp4', det,
+                        lang=args.lang, minimal=args.minimal)
         print(f'[render] {p}')
     print(f'[render] {len(clips)} 个审阅视频 -> {out_dir}')
 

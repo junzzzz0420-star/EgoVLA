@@ -2,12 +2,12 @@
   "meta": {
     "schema_version": "hoi-v1",
     "fusion_rules_version": "v1",
-    "generated_at": "2026-10-21T08:28:02.235797+00:00",
+    "generated_at": "2026-10-22T03:01:00.833829+00:00",
     "inputs_md5": {
-      "examples/gapfill_lyz/egocap_20261001_103828/structured/demonstration.parquet": "63a67043a1e4bb420a9341447d652226",
-      "examples/gapfill_lyz/egocap_20261001_103828/structured/action_segments.json": "2e9e91d4e2cfbde325906927637888e7",
-      "examples/gapfill_lyz/egocap_20261001_103828/structured/visual_context/clip_manifest.json": "3bee48a2e00a14072115a3ab6d98cbb2",
-      "examples/gapfill_lyz/egocap_20261001_103828/structured/visual_semantics/visual_predictions.json": "5bec38403f94efc954d311278360a886"
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/demonstration.parquet": "63a67043a1e4bb420a9341447d652226",
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/action_segments.json": "75c41c7050745b12e7a4c1218836678f",
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/visual_context/clip_manifest.json": "3bee48a2e00a14072115a3ab6d98cbb2",
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/visual_semantics/visual_predictions.json": "5bec38403f94efc954d311278360a886"
     },
     "time_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
     "notes": "multimodal fusion CANDIDATES; primitives are auxiliary evidence only; not robot ground truth"

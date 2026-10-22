@@ -1,0 +1,31 @@
+{
+  "mapping": "traj timestamp t (s, relative to window start) <-> video frame index round(t * fps)",
+  "traj_rows": 182,
+  "traj_dt": {
+    "median_s": 0.066667,
+    "min_s": 0.066667,
+    "max_s": 0.066667,
+    "regular": true
+  },
+  "videos": {
+    "left": {
+      "path": "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/rig_input/camera0_rig_2.00s_17.00s.mp4",
+      "nb_frames": 182,
+      "fps": 15.0,
+      "duration_s": 12.133333,
+      "frame_count_matches_trajectory": true,
+      "status": "ok"
+    },
+    "right": {
+      "path": "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/rig_input/camera1_rig_2.00s_17.00s.mp4",
+      "nb_frames": 182,
+      "fps": 15.0,
+      "duration_s": 12.133333,
+      "frame_count_matches_trajectory": true,
+      "status": "ok"
+    }
+  },
+  "ok": true,
+  "status": "verified",
+  "uncertainty": "resampling from 30 fps source to 15 fps: up to ±16.7 ms (half source frame); pixel-verified externally at probe frames (r=0.998/0.999, 0 ms offset) for the validated example. For new windows without a pixel check, treat as frame-count-verified only."
+}

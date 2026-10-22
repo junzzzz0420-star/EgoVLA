@@ -145,6 +145,8 @@ def index():
  <div class="row">窗口起点(秒) <input type="number" id="start" value="2.4" step="0.1" min="0" style="width:90px">
   时长(秒) <input type="number" id="dur" value="5" step="0.5" min="1" max="60" style="width:90px"></div>
  <div class="row"><button id="run" onclick="run()">运行</button>
+  <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="audit_fill" checked> 掉帧检查+补帧</label>
+  <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="hoi" checked> 语义标注视频(中文红框,含大模型约+3分钟)</label>
   <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="vlm"> 大模型复核动作</label>
   <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="vlm_open"> 开放动作识别(自动任务描述)</label>
   <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="autoscroll" checked> 日志自动滚动</label></div>
@@ -189,6 +191,8 @@ async function run(){{
   duration:parseFloat(document.getElementById('dur').value),
   task:document.getElementById('task').value.trim(),
   vlm:document.getElementById('vlm').checked,
+  audit_fill:document.getElementById('audit_fill').checked,
+  hoi:document.getElementById('hoi').checked,
   vlm_open:document.getElementById('vlm_open').checked}};
  const r=await fetch('/api/run',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(body)}});
  const j=await r.json(); if(!j.ok){{alert(j.error);return;}}
@@ -222,6 +226,8 @@ def api_run():
         task = (req.get('task') or '').strip() or None
         vlm = bool(req.get('vlm'))
         vlm_open = bool(req.get('vlm_open'))
+        audit_fill = bool(req.get('audit_fill'))
+        hoi = bool(req.get('hoi'))
         if mode not in ('mono', 'stereo', 'rig6') or not Path(mcap).exists():
             return jsonify(ok=False, error='参数无效')
         # 预检时长：mcap 用其本身，已转换目录用 camera0.mp4
@@ -245,6 +251,8 @@ def api_run():
                     video=None, error=None, started=tag)
         _job['log'].append(f'模式={mode}  起点={start}s  时长={duration}s'
                            f'{f"  标注={task}" if task else ""}'
+                           f'{"  掉帧检查+补帧=开" if audit_fill else ""}'
+                           f'{"  语义标注视频=开" if hoi else ""}'
                            f'{"  VLM复核=开" if vlm else ""}'
                            f'{"  开放识别=开" if vlm_open else ""}\n'
                            f'录制={Path(mcap).name}\n输出={out}\n')
@@ -259,6 +267,10 @@ def api_run():
                '--start', str(start), '--duration', str(duration), '--out', str(out)]
         if task:
             cmd += ['--task', task]
+        if audit_fill:
+            cmd += ['--audit-fill']
+        if hoi:
+            cmd += ['--hoi']
         if vlm:
             cmd += ['--vlm']
         if vlm_open:

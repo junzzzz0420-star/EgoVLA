@@ -1,0 +1,236 @@
+[
+  {
+    "clip_id": "clip_0000",
+    "source_segment_ids": [
+      "L0",
+      "L1",
+      "L2",
+      "L3"
+    ],
+    "start_time": 0.167,
+    "end_time": 2.633,
+    "left_video_ref": "clips/clip_0000_L.mp4",
+    "right_video_ref": "clips/clip_0000_R.mp4",
+    "video_frame_indices": {
+      "left": {
+        "first": 3,
+        "last": 39,
+        "count": 37
+      },
+      "right": {
+        "first": 3,
+        "last": 39,
+        "count": 37
+      }
+    },
+    "source_frame_timestamps": {
+      "before": 0.417,
+      "at_start": 0.667,
+      "at_end": 2.133,
+      "peak": 2.6
+    },
+    "trajectory_frame_indices": {
+      "first": 3,
+      "last": 39,
+      "count": 37
+    },
+    "left_primitive_candidates": [
+      "hold",
+      "pinch",
+      "rotate",
+      "transport"
+    ],
+    "right_primitive_candidates": [],
+    "bimanual_events": [],
+    "left_quality": {
+      "observed": 1.0
+    },
+    "right_quality": {},
+    "reliable_evidence": true,
+    "alignment_status": "verified",
+    "alignment_error_or_uncertainty": "resampling from 30 fps source to 15 fps: up to ±16.7 ms (half source frame); pixel-verified externally at probe frames (r=0.998/0.999, 0 ms offset) for the validated example. For new windows without a pixel check, treat as frame-count-verified only.",
+    "object_category": null,
+    "contact_state": "unknown",
+    "semantic_status": "pending"
+  },
+  {
+    "clip_id": "clip_0001",
+    "source_segment_ids": [
+      "L4",
+      "L5",
+      "L6",
+      "L7",
+      "L8"
+    ],
+    "start_time": 1.9,
+    "end_time": 6.567,
+    "left_video_ref": "clips/clip_0001_L.mp4",
+    "right_video_ref": "clips/clip_0001_R.mp4",
+    "video_frame_indices": {
+      "left": {
+        "first": 28,
+        "last": 99,
+        "count": 72
+      },
+      "right": {
+        "first": 28,
+        "last": 99,
+        "count": 72
+      }
+    },
+    "source_frame_timestamps": {
+      "before": 2.15,
+      "at_start": 2.4,
+      "at_end": 6.067,
+      "peak": 3.867
+    },
+    "trajectory_frame_indices": {
+      "first": 29,
+      "last": 98,
+      "count": 70
+    },
+    "left_primitive_candidates": [
+      "hold",
+      "pinch",
+      "rotate"
+    ],
+    "right_primitive_candidates": [],
+    "bimanual_events": [],
+    "left_quality": {
+      "observed": 1.0
+    },
+    "right_quality": {},
+    "reliable_evidence": true,
+    "alignment_status": "verified",
+    "alignment_error_or_uncertainty": "resampling from 30 fps source to 15 fps: up to ±16.7 ms (half source frame); pixel-verified externally at probe frames (r=0.998/0.999, 0 ms offset) for the validated example. For new windows without a pixel check, treat as frame-count-verified only.",
+    "object_category": null,
+    "contact_state": "unknown",
+    "semantic_status": "pending"
+  },
+  {
+    "clip_id": "clip_0002",
+    "source_segment_ids": [
+      "L9",
+      "L10",
+      "R0",
+      "L11",
+      "R1",
+      "R2",
+      "R3",
+      "L12",
+      "R4",
+      "B0"
+    ],
+    "start_time": 6.033,
+    "end_time": 11.233,
+    "left_video_ref": "clips/clip_0002_L.mp4",
+    "right_video_ref": "clips/clip_0002_R.mp4",
+    "video_frame_indices": {
+      "left": {
+        "first": 90,
+        "last": 168,
+        "count": 79
+      },
+      "right": {
+        "first": 90,
+        "last": 168,
+        "count": 79
+      }
+    },
+    "source_frame_timestamps": {
+      "before": 6.283,
+      "at_start": 6.533,
+      "at_end": 10.733,
+      "peak": 10.467
+    },
+    "trajectory_frame_indices": {
+      "first": 91,
+      "last": 168,
+      "count": 78
+    },
+    "left_primitive_candidates": [
+      "hold",
+      "pinch",
+      "rotate",
+      "transport"
+    ],
+    "right_primitive_candidates": [
+      "hold",
+      "pinch",
+      "power_grasp",
+      "rotate",
+      "transport"
+    ],
+    "bimanual_events": [
+      "bimanual_rotate"
+    ],
+    "left_quality": {
+      "observed": 1.0
+    },
+    "right_quality": {
+      "observed": 1.0
+    },
+    "reliable_evidence": true,
+    "alignment_status": "verified",
+    "alignment_error_or_uncertainty": "resampling from 30 fps source to 15 fps: up to ±16.7 ms (half source frame); pixel-verified externally at probe frames (r=0.998/0.999, 0 ms offset) for the validated example. For new windows without a pixel check, treat as frame-count-verified only.",
+    "object_category": null,
+    "contact_state": "unknown",
+    "semantic_status": "pending"
+  },
+  {
+    "clip_id": "clip_0003",
+    "source_segment_ids": [
+      "R5",
+      "B1",
+      "L13"
+    ],
+    "start_time": 10.5,
+    "end_time": 12.133,
+    "left_video_ref": "clips/clip_0003_L.mp4",
+    "right_video_ref": "clips/clip_0003_R.mp4",
+    "video_frame_indices": {
+      "left": {
+        "first": 158,
+        "last": 181,
+        "count": 24
+      },
+      "right": {
+        "first": 158,
+        "last": 181,
+        "count": 24
+      }
+    },
+    "source_frame_timestamps": {
+      "before": 10.75,
+      "at_start": 11.0,
+      "at_end": 11.867,
+      "peak": 11.333
+    },
+    "trajectory_frame_indices": {
+      "first": 158,
+      "last": 181,
+      "count": 24
+    },
+    "left_primitive_candidates": [
+      "rotate"
+    ],
+    "right_primitive_candidates": [
+      "rotate"
+    ],
+    "bimanual_events": [
+      "bimanual_rotate"
+    ],
+    "left_quality": {
+      "observed": 1.0
+    },
+    "right_quality": {
+      "observed": 1.0
+    },
+    "reliable_evidence": true,
+    "alignment_status": "verified",
+    "alignment_error_or_uncertainty": "resampling from 30 fps source to 15 fps: up to ±16.7 ms (half source frame); pixel-verified externally at probe frames (r=0.998/0.999, 0 ms offset) for the validated example. For new windows without a pixel check, treat as frame-count-verified only.",
+    "object_category": null,
+    "contact_state": "unknown",
+    "semantic_status": "pending"
+  }
+]
