@@ -28,7 +28,7 @@ import pandas as pd
 HAND_COLORS = {'left': (80, 220, 80), 'right': (60, 160, 255)}   # BGR
 WARN = (60, 60, 255)
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-BOX_H = 150           # 注释框高度(px)，位置固定于左上
+BOX_H = 240           # 注释框高度(px)：容纳双手并列各5行
 
 
 def draw_box(img, lines):
@@ -45,8 +45,10 @@ def draw_box(img, lines):
 
 def events_at(events, t):
     act = [e for e in events if e['start_time'] - 1e-6 <= t <= e['end_time'] + 1e-6]
-    main = sorted(act, key=lambda e: (e['needs_review'], -e['start_time']))
-    return main[0] if main else None, act
+    # 主事件 = 双手并列：left 优先，其次按开始时间；不再把另一只手降级为小字
+    act.sort(key=lambda e: (e['hand_side'] != 'left', e['needs_review'],
+                            -e['start_time']))
+    return act[:2], act
 
 
 def hand_lines(e):
@@ -93,23 +95,23 @@ def render_clip(clip, events, demo, wrists, clips_dir, out_path, fps_hint=15.0):
         frame = np.concatenate([fL, fR_], axis=1)
         t = t0 + k / fps_hint
         row = min(int(np.searchsorted(ts, t)), len(ts) - 1)
-        main, act = events_at(ev, t)
+        mains, act = events_at(ev, t)
         lines = [(f"{clip['clip_id']}  t={t:.2f}s  frame={k}  (traj row {row})",
                   (255, 255, 255), 0.5)]
-        if main is None:
+        if not mains:
             lines.append(('NO ACTIVE EVENT (between candidates)', (180, 180, 180), 0.5))
-        else:
-            lines.append((f"event={main['event_id']} " + (
-                'NEEDS_REVIEW: ' + ','.join(main['conflicts'])
-                if main['needs_review'] else 'no-conflict'),
-                WARN if main['needs_review'] else (120, 255, 120), 0.5))
-            lines += hand_lines(main)
-            for other in act:
-                if other is not main:
-                    lines.append((f"(+co-active {other['event_id']} "
-                                  f"{other['hand_side']}/{str(other['object_category'])!r} "
-                                  f"review={other['needs_review']})", (180, 180, 180), 0.42))
-        draw_box(frame, lines[:7])
+        for m in mains[:2]:                      # 双手同框时两只手并列完整显示
+            lines.append((f"event={m['event_id']} " + (
+                'NEEDS_REVIEW: ' + ','.join(m['conflicts'])
+                if m['needs_review'] else 'no-conflict'),
+                WARN if m['needs_review'] else (120, 255, 120), 0.45))
+            lines += hand_lines(m)
+            lines.append(('', (0, 0, 0), 0.3))
+        for other in act[len(mains):]:           # 第三事件起仍保留灰字提示
+            lines.append((f"(+more {other['event_id']} "
+                          f"{other['hand_side']}/{str(other['object_category'])!r})",
+                          (180, 180, 180), 0.42))
+        draw_box(frame, [l for l in lines if l[0]][:11])
         cv2.putText(frame, 'CAM0 (left eye)', (8, H - 12), FONT, 0.5, (255, 255, 255), 1)
         cv2.putText(frame, 'CAM1 (right eye)', (W2 // 2 + 8, H - 12), FONT, 0.5,
                     (255, 255, 255), 1)
