@@ -173,7 +173,7 @@ def fuse_semantics(va: str, contact: str, obj, prims: list[str]) -> tuple[str, l
 
 # ---------------------------------------------------------------- 主流程
 
-def build(sd: Path, out_dir: Path):
+def build(sd: Path, out_dir: Path, decisions: list | None = None):
     demo = pd.read_parquet(sd / 'demonstration.parquet')
     segs = json.loads((sd / 'action_segments.json').read_text())
     clips = {c['clip_id']: c for c in json.loads(
@@ -376,6 +376,44 @@ def build(sd: Path, out_dir: Path):
         e['event_id'] = f'hoi_{k:04d}'
         e['possible_duplicate_of'] = [x['event_id'] for x in e.get('possible_duplicate_of', [])]
 
+    # ---- 人工裁决应用（Step 2.6）：在逐帧标签生成前生效，保证三产物同源
+    repair_log = []
+    if decisions:
+        for dec in decisions:
+            e = next((x for x in kept if x['event_id'] == dec['event_id']), None)
+            if e is None:
+                repair_log.append({'event_id': dec['event_id'], 'status': 'skipped_no_event'})
+                continue
+            lab = dec['reviewed_label']
+            t0, t1 = lab['bounds']
+            if not (0 <= t0 < t1 <= float(ts[-1]) + 1e-6):
+                repair_log.append({'event_id': dec['event_id'], 'status': 'skipped_bad_bounds'})
+                continue
+            e['human_decision'] = {
+                'action': dec['action'], 'reviewer': dec['reviewer'],
+                'reason': dec['correction_reason'], 'review_time': dec['review_time'],
+                'provenance': dec.get('provenance', 'human_review'),
+                'original': dec['original_prediction']}
+            if dec['action'] == 'mark_unknown':
+                e['object_category'] = None
+                e['semantic_action'] = 'unknown_action'
+            elif dec['action'] == 'mark_no_interaction':
+                e['object_category'] = None
+                e['semantic_action'] = 'no_interaction'
+            else:
+                e['hand_side'] = lab['hand']
+                e['object_category'] = lab['object']
+                e['semantic_action'] = lab['semantic']
+            e['start_time'], e['end_time'] = round(t0, 3), round(t1, 3)
+            e['start_frame'] = int(fi[frames_between(t0, t1)[0]])
+            e['end_frame'] = int(fi[frames_between(t0, t1)[1]])
+            e['trajectory_rows'] = list(frames_between(t0, t1))
+            e['verification_status'] = 'human_reviewed'
+            e['needs_review'] = dec['action'] == 'keep_reviewing'
+            e['conflicts'] = [] if dec['action'] == 'confirm' else e['conflicts']
+            repair_log.append({'event_id': dec['event_id'], 'status': 'applied',
+                               'action': dec['action'], 'reviewer': dec['reviewer']})
+
     # ---- 逐帧标签（姿态通道 + 交互状态机 + 展示标签，供渲染与审计同源使用）
     poses = {h: pose_state_series(demo, h)[0] for h in ('left', 'right')}
     rows = {'frame_index': fi.tolist(), 'timestamp': ts.tolist()}
@@ -425,7 +463,9 @@ def build(sd: Path, out_dir: Path):
                 if e['hand_side'] == hand and e['trajectory_rows'][0] <= r <= e['trajectory_rows'][1]:
                     obj = str(e.get('object_detected') or e['object_category'])
                     break
-            core = f'{INTER_CN[i]}' + (f' | {obj}' if obj and i in ('GRASP', 'HOLD') else '')
+            obj_ok = obj not in ('', 'None', 'nan', 'unknown_action', '无交互')
+            core = f'{INTER_CN[i]}' + (f' | {obj}' if obj and obj_ok
+                                       and i in ('GRASP', 'HOLD') else '')
             disp.append(f'{POSE_CN[p]} | {core}')
         rows[f'{hand}_pose_state'] = poses[hand]
         rows[f'{hand}_interaction_state'] = inter
@@ -453,6 +493,8 @@ def build(sd: Path, out_dir: Path):
                             'trajectory_rows': e['trajectory_rows'],
                             'video_frames': e['evidence_frames']['video']}}
               for e in kept if e['needs_review']]
+    (out_dir / 'repair_log.json').write_text(
+        json.dumps(repair_log, ensure_ascii=False, indent=2))
     (out_dir / 'review_queue.json').write_text(
         json.dumps(review, ensure_ascii=False, indent=2))
     (out_dir / 'fusion_report.json').write_text(json.dumps({
@@ -471,10 +513,17 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--structured-dir', required=True)
     ap.add_argument('--out-dir', default=None)
+    ap.add_argument('--decisions', default=None,
+                    help='review_decisions.jsonl：人工裁决应用到事件（输出到 hoi_repaired，不覆盖原结果）')
     args = ap.parse_args()
     sd = Path(args.structured_dir)
     out = Path(args.out_dir) if args.out_dir else sd / 'hoi_fusion'
-    ann, stats = build(sd, out)
+    decisions = None
+    if args.decisions:
+        decisions = [json.loads(l) for l in
+                     Path(args.decisions).read_text().splitlines() if l.strip()]
+        out = out if args.out_dir else sd / 'hoi_repaired'
+    ann, stats = build(sd, out, decisions)
     evs = ann['events']
     print(f'[fuse_hoi] 事件 {len(evs)} 个（合并 {stats["merged"]}，疑似重复 '
           f'{stats["possible_duplicates"]}）-> {out}')

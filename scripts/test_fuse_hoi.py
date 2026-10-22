@@ -195,5 +195,53 @@ if gnd_ok:
        ['time_mapping_selfcheck']['clips_within_hd'])
 else:
     print('SKIP Step2.5 专项（无 grounding 输入）')
+
+# ================= Step 2.6 专项（审核-修复闭环；合成裁决验证机制本身）====
+dec_path = Path(tempfile.mkdtemp()) / 'dec.jsonl'
+dec_path.write_text(
+    '{"event_id": "hoi_0004", "action": "mark_unknown", '
+    '"reviewed_label": {"hand": "left", "object": null, "semantic": "unknown_action", "bounds": [6.03, 8.2]}, '
+    '"original_prediction": {"object": "computer mouse"}, "correction_type": "mark_unknown", '
+    '"evidence_frame_ids": [6.03], "reviewer": "jun", "review_time": "t", '
+    '"correction_reason": "逐帧复核", "source_version": "v1+hoi-v1", "provenance": "human_review"}\n'
+    '{"event_id": "hoi_missing", "action": "confirm", '
+    '"reviewed_label": {"hand": "left", "object": "x", "semantic": "grasp", "bounds": [0, 1]}, '
+    '"original_prediction": {}, "correction_type": "confirm", "evidence_frame_ids": [], '
+    '"reviewer": "jun", "review_time": "t", "correction_reason": "r", '
+    '"source_version": "v", "provenance": "human_review"}\n')
+h_before = hashlib.md5((hf / 'hoi_annotations.json').read_bytes()).hexdigest()
+fuse_hoi.build(sd, Path(tempfile.mkdtemp()) / 'rep1',
+               [json.loads(l) for l in dec_path.read_text().splitlines() if l.strip()])
+import shutil as _sh
+out2 = Path(tempfile.mkdtemp()) / 'rep2'
+fuse_hoi.build(sd, out2,
+               [json.loads(l) for l in dec_path.read_text().splitlines() if l.strip()])
+e4 = json.loads((out2 / 'hoi_annotations.json').read_text())['events']
+e4 = next(e for e in e4 if e['event_id'] == 'hoi_0004')
+flr = pd.read_parquet(out2 / 'hoi_frame_labels.parquet')
+ok('T26 裁决同步到事件+逐帧', e4['object_category'] is None
+   and e4['semantic_action'] == 'unknown_action'
+   and e4['verification_status'] == 'human_reviewed'
+   and e4['human_decision']['provenance'] == 'human_review'
+   and 'computer mouse' not in flr.left_display.iloc[95:125].str.cat())
+ok('T27 原始结果不可变',
+   hashlib.md5((hf / 'hoi_annotations.json').read_bytes()).hexdigest() == h_before)
+_ok31 = out2 / 'repair_log.json'
+log = json.loads(_ok31.read_text())
+ok('T28 修复记录可追溯+坏ID跳过',
+   log[0]['status'] == 'applied' and log[1]['status'] == 'skipped_no_event')
+# 幂等：再跑一次比较（剔除时间戳）
+out3 = Path(tempfile.mkdtemp()) / 'rep3'
+fuse_hoi.build(sd, out3,
+               [json.loads(l) for l in dec_path.read_text().splitlines() if l.strip()])
+a = (out2 / 'hoi_annotations.json').read_text()
+b = (out3 / 'hoi_annotations.json').read_text()
+ga = json.loads(a)['meta']['generated_at']; gb = json.loads(b)['meta']['generated_at']
+ok('T29 修复幂等', a.replace(ga, '') == b.replace(gb, ''))
+ok('T30 缺检≠无接触审计在案', (hf / 'audit_report.json').exists() and
+   'insufficient_evidence' in (hf / 'audit_report.json').read_text()
+   and 'provisional' in json.loads(
+       (hf / 'ground_truth_clip_0002.json').read_text())['meta']['provenance'])
+
 print(chr(10)+'总计(含2.5):', sum(R), '/', len(R), 'PASS')
 sys.exit(0 if all(R) else 1)

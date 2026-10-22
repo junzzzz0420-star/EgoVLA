@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "step": "2.6-audit",
+    "base_commit": "76eedc9",
+    "principle": "absence of detection evidence != evidence of absence"
+  },
+  "step25_conclusion_audit": [
+    {
+      "claim": "right×mouse near=0 ⇒ 右手没接触鼠标",
+      "verdict": "insufficient_evidence",
+      "reason": "near=0 只说明当前检测框/距离定义/阈值下无接近证据；mouse 有 225 帧检出但小目标框抖动、手遮物时框会消失；不能推出无接触",
+      "action": "冲突名保持 object_vlm_detector_mismatch（证据不足级），不得写成 contact_refuted"
+    },
+    {
+      "claim": "4 帧抽查 ⇒ 整段无抓取",
+      "verdict": "insufficient_evidence",
+      "reason": "5.2s/78 帧只看 4 帧；采样不足以裁决",
+      "action": "ground_truth_clip_0002.json 已标 provisional，正式真值须实际审核者看完整时段逐帧确认并留身份"
+    },
+    {
+      "claim": "laptop 面积>25% 一律排除",
+      "verdict": "supported_with_risk",
+      "reason": "laptop 常为大框合理，但外接小屏/半出画时会误排",
+      "action": "保留排除但记入 environment_classes_excluded 可追查"
+    },
+    {
+      "claim": "键盘+弱pinch ⇒ keyboard_touch_candidate",
+      "verdict": "supported",
+      "reason": "两路证据一致且语义保守"
+    },
+    {
+      "claim": "VLM/grounding/人工标签数据混用",
+      "verdict": "clean",
+      "reason": "三源字段分离（object_category/object_detected/gt 文件），GT 未回填"
+    }
+  ],
+  "conclusion": "Step2.5 的\"发现\"成立，但所有否定性结论降级为 insufficient_evidence 级；裁决权留给完整人工复核"
+}

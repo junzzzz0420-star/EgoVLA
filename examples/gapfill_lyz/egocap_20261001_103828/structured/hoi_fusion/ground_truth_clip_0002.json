@@ -4,7 +4,8 @@
     "clip_id": "clip_0002",
     "annotator": "jun + ZCode visual inspection of HD frames",
     "method": "manual inspection of 4 HD stereo frames + grounding cross-check",
-    "note": "independent of automatic predictions; NOT used to overwrite them"
+    "note": "independent of automatic predictions; NOT used to overwrite them | PROVISIONAL: 待实际审核者逐帧复核后升级为正式真值；不得作为裁决依据",
+    "provenance": "provisional_codex_assisted"
   },
   "events": [
     {

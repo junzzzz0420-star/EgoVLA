@@ -1,0 +1,1441 @@
+{
+  "meta": {
+    "schema_version": "hoi-v1",
+    "fusion_rules_version": "v1",
+    "generated_at": "2026-10-22T05:41:45.775979+00:00",
+    "inputs_md5": {
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/demonstration.parquet": "63a67043a1e4bb420a9341447d652226",
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/action_segments.json": "75c41c7050745b12e7a4c1218836678f",
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/visual_context/clip_manifest.json": "3bee48a2e00a14072115a3ab6d98cbb2",
+      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/visual_semantics/visual_predictions.json": "5bec38403f94efc954d311278360a886"
+    },
+    "time_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+    "notes": "multimodal fusion CANDIDATES; primitives are auxiliary evidence only; not robot ground truth"
+  },
+  "events": [
+    {
+      "event_id": "hoi_0000",
+      "source_clip_ids": [
+        "clip_0000"
+      ],
+      "source_segment_ids": [],
+      "source_prediction_ids": [
+        "clip_0000_L_1",
+        "clip_0000_R_1"
+      ],
+      "start_time": 0.167,
+      "end_time": 2.633,
+      "visual_time_boundaries": [
+        0.167,
+        2.633
+      ],
+      "motion_time_boundaries": null,
+      "start_frame": 3,
+      "end_frame": 39,
+      "trajectory_rows": [
+        3,
+        39
+      ],
+      "hand_side": "right",
+      "object_category": "电脑鼠标",
+      "object_category_alt": [
+        "鼠标"
+      ],
+      "object_instance_local_id": "clip_0000::电脑鼠标",
+      "visual_action": "grasp",
+      "motion_primitives": [],
+      "semantic_action": "keyboard_touch_candidate",
+      "contact_state": "visible_contact",
+      "motion_contact_cue": 0.534,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 0.0,
+        "pinch_median": 0.534
+      },
+      "end_time_original": null,
+      "trajectory_reference": {
+        "parquet": "demonstration.parquet",
+        "rows": [
+          3,
+          39
+        ],
+        "timestamp_range": [
+          0.2,
+          2.6
+        ]
+      },
+      "evidence_frames": {
+        "video": [
+          6,
+          10,
+          11,
+          16,
+          21,
+          27,
+          32,
+          37,
+          39
+        ],
+        "video_timestamps": [
+          0.4,
+          0.667,
+          0.733,
+          1.067,
+          1.4,
+          1.8,
+          2.133,
+          2.467,
+          2.6
+        ],
+        "trajectory_rows": [
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ]
+      },
+      "camera_evidence": [
+        "L",
+        "R"
+      ],
+      "alignment_status": "verified",
+      "alignment_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+      "quality_status": {
+        "observed": 1.0
+      },
+      "conflicts": [
+        "object_naming_mismatch",
+        "primitive_visual_mismatch",
+        "weak_grasp_evidence"
+      ],
+      "needs_review": true,
+      "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "cup": {
+            "n": 1,
+            "dist_median": 2.137,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": null
+          },
+          "keyboard": {
+            "n": 100,
+            "dist_median": 0.623,
+            "iou_median": 0.042,
+            "near_ratio": 0.86,
+            "corr_median": 0.098
+          },
+          "mouse": {
+            "n": 57,
+            "dist_median": 1.606,
+            "iou_median": 0.0,
+            "near_ratio": 0.039,
+            "corr_median": 0.166
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": "keyboard",
+      "object_resolution": "resolved",
+      "semantic_action_before_grounding": "keyboard_touch_candidate",
+      "possible_duplicate_of": []
+    },
+    {
+      "event_id": "hoi_0001",
+      "source_clip_ids": [
+        "clip_0000"
+      ],
+      "source_segment_ids": [
+        "L0",
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "source_prediction_ids": [
+        "clip_0000_L_0",
+        "clip_0000_R_0"
+      ],
+      "start_time": 0.67,
+      "end_time": 1.5,
+      "visual_time_boundaries": [
+        0.167,
+        2.633
+      ],
+      "motion_time_boundaries": [
+        0.667,
+        2.133
+      ],
+      "start_frame": 11,
+      "end_frame": 22,
+      "trajectory_rows": [
+        11,
+        22
+      ],
+      "hand_side": "left",
+      "object_category": "手机",
+      "object_category_alt": [],
+      "object_instance_local_id": "clip_0000::手机",
+      "visual_action": "grasp",
+      "motion_primitives": [
+        "hold",
+        "pinch",
+        "rotate",
+        "transport"
+      ],
+      "semantic_action": "candidate_object_grasp",
+      "contact_state": "visible_contact",
+      "motion_contact_cue": 0.387,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 29.0,
+        "pinch_median": 0.387
+      },
+      "end_time_original": 2.133,
+      "trajectory_reference": {
+        "parquet": "demonstration.parquet",
+        "rows": [
+          11,
+          18
+        ],
+        "timestamp_range": [
+          0.733,
+          1.2
+        ]
+      },
+      "evidence_frames": {
+        "video": [
+          6,
+          10,
+          11,
+          16,
+          21,
+          27,
+          32,
+          37,
+          39
+        ],
+        "video_timestamps": [
+          0.4,
+          0.667,
+          0.733,
+          1.067,
+          1.4,
+          1.8,
+          2.133,
+          2.467,
+          2.6
+        ],
+        "trajectory_rows": [
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "camera_evidence": [
+        "L",
+        "R"
+      ],
+      "alignment_status": "verified",
+      "alignment_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+      "quality_status": {
+        "observed": 1.0
+      },
+      "conflicts": [
+        "boundary_refined_by_release",
+        "object_vlm_detector_mismatch",
+        "time_boundary_mismatch",
+        "weak_grasp_evidence"
+      ],
+      "needs_review": false,
+      "verification_status": "human_reviewed",
+      "grounding": {
+        "per_class": {
+          "keyboard": {
+            "n": 37,
+            "dist_median": 1.006,
+            "iou_median": 0.022,
+            "near_ratio": 0.811,
+            "corr_median": 0.112
+          },
+          "mouse": {
+            "n": 21,
+            "dist_median": 2.787,
+            "iou_median": 0.0,
+            "near_ratio": 0.179,
+            "corr_median": -0.041
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": null,
+      "object_resolution": "vlm_detector_mismatch",
+      "possible_duplicate_of": [],
+      "human_decision": {
+        "action": "adjust_boundary",
+        "reviewer": "jun",
+        "reason": "持握持续到1.5s",
+        "review_time": "2026-10-22T12:05:00",
+        "provenance": "human_review",
+        "original": {
+          "object": "手机",
+          "hand": "left",
+          "semantic": "candidate_object_grasp",
+          "bounds": [
+            0.67,
+            1.2
+          ]
+        }
+      }
+    },
+    {
+      "event_id": "hoi_0002",
+      "source_clip_ids": [
+        "clip_0001"
+      ],
+      "source_segment_ids": [],
+      "source_prediction_ids": [
+        "clip_0001_R_1"
+      ],
+      "start_time": 1.9,
+      "end_time": 6.567,
+      "visual_time_boundaries": [
+        1.9,
+        6.567
+      ],
+      "motion_time_boundaries": null,
+      "start_frame": 29,
+      "end_frame": 98,
+      "trajectory_rows": [
+        29,
+        98
+      ],
+      "hand_side": "right",
+      "object_category": "游戏手柄",
+      "object_category_alt": [],
+      "object_instance_local_id": "clip_0001::游戏手柄",
+      "visual_action": "grasp",
+      "motion_primitives": [],
+      "semantic_action": "keyboard_touch_candidate",
+      "contact_state": "visible_contact",
+      "motion_contact_cue": 0.454,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 0.0,
+        "pinch_median": 0.454
+      },
+      "end_time_original": null,
+      "trajectory_reference": {
+        "parquet": "demonstration.parquet",
+        "rows": [
+          29,
+          98
+        ],
+        "timestamp_range": [
+          1.933,
+          6.533
+        ]
+      },
+      "evidence_frames": {
+        "video": [
+          31,
+          32,
+          36,
+          41,
+          46,
+          51,
+          56,
+          58,
+          61,
+          66,
+          71,
+          76,
+          81,
+          86,
+          91,
+          96
+        ],
+        "video_timestamps": [
+          2.067,
+          2.133,
+          2.4,
+          2.733,
+          3.067,
+          3.4,
+          3.733,
+          3.867,
+          4.067,
+          4.4,
+          4.733,
+          5.067,
+          5.4,
+          5.733,
+          6.067,
+          6.4
+        ],
+        "trajectory_rows": [
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98
+        ]
+      },
+      "camera_evidence": [
+        "R"
+      ],
+      "alignment_status": "verified",
+      "alignment_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+      "quality_status": {
+        "observed": 1.0
+      },
+      "conflicts": [
+        "object_continuity_question",
+        "primitive_visual_mismatch",
+        "weak_grasp_evidence"
+      ],
+      "needs_review": true,
+      "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "cup": {
+            "n": 5,
+            "dist_median": 2.188,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": null
+          },
+          "keyboard": {
+            "n": 161,
+            "dist_median": 0.885,
+            "iou_median": 0.055,
+            "near_ratio": 0.957,
+            "corr_median": 0.209
+          },
+          "mouse": {
+            "n": 90,
+            "dist_median": 2.116,
+            "iou_median": 0.0,
+            "near_ratio": 0.046,
+            "corr_median": 0.144
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": "keyboard",
+      "object_resolution": "resolved",
+      "semantic_action_before_grounding": "keyboard_touch_candidate",
+      "object_continuity_alt": [
+        "游戏手柄",
+        "电脑鼠标"
+      ],
+      "bimanual_same_object": true,
+      "possible_duplicate_of": []
+    },
+    {
+      "event_id": "hoi_0003",
+      "source_clip_ids": [
+        "clip_0001"
+      ],
+      "source_segment_ids": [
+        "L4",
+        "L5",
+        "L6",
+        "L7",
+        "L8"
+      ],
+      "source_prediction_ids": [
+        "clip_0001_R_0"
+      ],
+      "start_time": 2.4,
+      "end_time": 6.067,
+      "visual_time_boundaries": [
+        1.9,
+        6.567
+      ],
+      "motion_time_boundaries": [
+        2.4,
+        6.067
+      ],
+      "start_frame": 36,
+      "end_frame": 91,
+      "trajectory_rows": [
+        36,
+        91
+      ],
+      "hand_side": "left",
+      "object_category": "游戏手柄",
+      "object_category_alt": [],
+      "object_instance_local_id": "clip_0001::游戏手柄",
+      "visual_action": "grasp",
+      "motion_primitives": [
+        "hold",
+        "pinch",
+        "rotate"
+      ],
+      "semantic_action": "candidate_object_grasp",
+      "contact_state": "visible_contact",
+      "motion_contact_cue": 0.309,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 68.0,
+        "pinch_median": 0.309
+      },
+      "end_time_original": null,
+      "trajectory_reference": {
+        "parquet": "demonstration.parquet",
+        "rows": [
+          36,
+          91
+        ],
+        "timestamp_range": [
+          2.4,
+          6.067
+        ]
+      },
+      "evidence_frames": {
+        "video": [
+          31,
+          32,
+          36,
+          41,
+          46,
+          51,
+          56,
+          58,
+          61,
+          66,
+          71,
+          76,
+          81,
+          86,
+          91,
+          96
+        ],
+        "video_timestamps": [
+          2.067,
+          2.133,
+          2.4,
+          2.733,
+          3.067,
+          3.4,
+          3.733,
+          3.867,
+          4.067,
+          4.4,
+          4.733,
+          5.067,
+          5.4,
+          5.733,
+          6.067,
+          6.4
+        ],
+        "trajectory_rows": [
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91
+        ]
+      },
+      "camera_evidence": [
+        "R"
+      ],
+      "alignment_status": "verified",
+      "alignment_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+      "quality_status": {
+        "observed": 1.0
+      },
+      "conflicts": [
+        "object_continuity_question",
+        "object_vlm_detector_mismatch",
+        "time_boundary_mismatch"
+      ],
+      "needs_review": true,
+      "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "cup": {
+            "n": 5,
+            "dist_median": 1.24,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": null
+          },
+          "keyboard": {
+            "n": 131,
+            "dist_median": 0.998,
+            "iou_median": 0.0,
+            "near_ratio": 0.953,
+            "corr_median": 0.367
+          },
+          "mouse": {
+            "n": 68,
+            "dist_median": 1.48,
+            "iou_median": 0.0,
+            "near_ratio": 0.177,
+            "corr_median": 0.185
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": null,
+      "object_resolution": "vlm_detector_mismatch",
+      "object_continuity_alt": [
+        "手机",
+        "游戏手柄"
+      ],
+      "bimanual_same_object": true,
+      "possible_duplicate_of": []
+    },
+    {
+      "event_id": "hoi_0004",
+      "source_clip_ids": [
+        "clip_0002"
+      ],
+      "source_segment_ids": [
+        "L9",
+        "L10",
+        "L11",
+        "L12",
+        "B0"
+      ],
+      "source_prediction_ids": [
+        "clip_0002_L_0",
+        "clip_0002_R_0"
+      ],
+      "start_time": 6.03,
+      "end_time": 8.2,
+      "visual_time_boundaries": [
+        6.033,
+        11.233
+      ],
+      "motion_time_boundaries": [
+        0.667,
+        10.733
+      ],
+      "start_frame": 91,
+      "end_frame": 123,
+      "trajectory_rows": [
+        91,
+        123
+      ],
+      "hand_side": "left",
+      "object_category": null,
+      "object_category_alt": [],
+      "object_instance_local_id": "clip_0002::computer_mouse",
+      "visual_action": "grasp",
+      "motion_primitives": [
+        "hold",
+        "pinch",
+        "rotate",
+        "transport"
+      ],
+      "semantic_action": "unknown_action",
+      "contact_state": "visible_contact",
+      "motion_contact_cue": 0.625,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 27.0,
+        "pinch_median": 0.625
+      },
+      "end_time_original": 10.733,
+      "trajectory_reference": {
+        "parquet": "demonstration.parquet",
+        "rows": [
+          91,
+          124
+        ],
+        "timestamp_range": [
+          6.067,
+          8.267
+        ]
+      },
+      "evidence_frames": {
+        "video": [
+          93,
+          94,
+          98,
+          103,
+          108,
+          113,
+          119,
+          124,
+          129,
+          134,
+          139,
+          145,
+          150,
+          155,
+          157,
+          160,
+          161,
+          165
+        ],
+        "video_timestamps": [
+          6.2,
+          6.267,
+          6.533,
+          6.867,
+          7.2,
+          7.533,
+          7.933,
+          8.267,
+          8.6,
+          8.933,
+          9.267,
+          9.667,
+          10.0,
+          10.333,
+          10.467,
+          10.667,
+          10.733,
+          11.0
+        ],
+        "trajectory_rows": [
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124
+        ]
+      },
+      "camera_evidence": [
+        "L",
+        "R"
+      ],
+      "alignment_status": "verified",
+      "alignment_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+      "quality_status": {
+        "observed": 1.0
+      },
+      "conflicts": [
+        "boundary_refined_by_release",
+        "object_continuity_question",
+        "object_vlm_detector_mismatch",
+        "time_boundary_mismatch",
+        "weak_grasp_evidence"
+      ],
+      "needs_review": false,
+      "verification_status": "human_reviewed",
+      "grounding": {
+        "per_class": {
+          "cup": {
+            "n": 3,
+            "dist_median": 1.446,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": null
+          },
+          "keyboard": {
+            "n": 85,
+            "dist_median": 1.074,
+            "iou_median": 0.0,
+            "near_ratio": 0.984,
+            "corr_median": 0.477
+          },
+          "mouse": {
+            "n": 46,
+            "dist_median": 1.461,
+            "iou_median": 0.0,
+            "near_ratio": 0.226,
+            "corr_median": 0.25
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": null,
+      "object_resolution": "vlm_detector_mismatch",
+      "object_continuity_alt": [
+        "computer mouse",
+        "游戏手柄"
+      ],
+      "bimanual_same_object": true,
+      "possible_duplicate_of": [],
+      "human_decision": {
+        "action": "mark_unknown",
+        "reviewer": "jun",
+        "reason": "逐帧复核未见握持，物体不可确认",
+        "review_time": "2026-10-22T12:00:00",
+        "provenance": "human_review",
+        "original": {
+          "object": "computer mouse",
+          "hand": "left",
+          "semantic": "candidate_object_grasp",
+          "bounds": [
+            6.03,
+            8.33
+          ]
+        }
+      }
+    },
+    {
+      "event_id": "hoi_0005",
+      "source_clip_ids": [
+        "clip_0002"
+      ],
+      "source_segment_ids": [
+        "R0",
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "B0"
+      ],
+      "source_prediction_ids": [
+        "clip_0002_L_1",
+        "clip_0002_R_1"
+      ],
+      "start_time": 7.333,
+      "end_time": 8.933,
+      "visual_time_boundaries": [
+        6.033,
+        11.233
+      ],
+      "motion_time_boundaries": [
+        7.333,
+        10.733
+      ],
+      "start_frame": 110,
+      "end_frame": 133,
+      "trajectory_rows": [
+        110,
+        133
+      ],
+      "hand_side": "right",
+      "object_category": "computer mouse",
+      "object_category_alt": [],
+      "object_instance_local_id": "clip_0002::computer_mouse",
+      "visual_action": "grasp",
+      "motion_primitives": [
+        "hold",
+        "pinch",
+        "power_grasp",
+        "rotate",
+        "transport"
+      ],
+      "semantic_action": "candidate_object_grasp",
+      "contact_state": "visible_contact",
+      "motion_contact_cue": 0.482,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 10.0,
+        "pinch_median": 0.482
+      },
+      "end_time_original": 10.733,
+      "trajectory_reference": {
+        "parquet": "demonstration.parquet",
+        "rows": [
+          110,
+          133
+        ],
+        "timestamp_range": [
+          7.333,
+          8.867
+        ]
+      },
+      "evidence_frames": {
+        "video": [
+          93,
+          94,
+          98,
+          103,
+          108,
+          113,
+          119,
+          124,
+          129,
+          134,
+          139,
+          145,
+          150,
+          155,
+          157,
+          160,
+          161,
+          165
+        ],
+        "video_timestamps": [
+          6.2,
+          6.267,
+          6.533,
+          6.867,
+          7.2,
+          7.533,
+          7.933,
+          8.267,
+          8.6,
+          8.933,
+          9.267,
+          9.667,
+          10.0,
+          10.333,
+          10.467,
+          10.667,
+          10.733,
+          11.0
+        ],
+        "trajectory_rows": [
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124,
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          131,
+          132,
+          133
+        ]
+      },
+      "camera_evidence": [
+        "L",
+        "R"
+      ],
+      "alignment_status": "verified",
+      "alignment_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+      "quality_status": {
+        "observed": 1.0
+      },
+      "conflicts": [
+        "boundary_refined_by_release",
+        "object_continuity_question",
+        "object_vlm_detector_mismatch",
+        "time_boundary_mismatch",
+        "weak_grasp_evidence"
+      ],
+      "needs_review": true,
+      "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "cup": {
+            "n": 6,
+            "dist_median": 2.611,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": null
+          },
+          "keyboard": {
+            "n": 68,
+            "dist_median": 1.286,
+            "iou_median": 0.0,
+            "near_ratio": 0.918,
+            "corr_median": 0.103
+          },
+          "mouse": {
+            "n": 30,
+            "dist_median": 2.316,
+            "iou_median": 0.0,
+            "near_ratio": 0.0,
+            "corr_median": 0.084
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": null,
+      "object_resolution": "vlm_detector_mismatch",
+      "object_continuity_alt": [
+        "computer mouse",
+        "游戏手柄"
+      ],
+      "bimanual_same_object": true,
+      "possible_duplicate_of": []
+    },
+    {
+      "event_id": "hoi_0006",
+      "source_clip_ids": [
+        "clip_0003"
+      ],
+      "source_segment_ids": [
+        "B1",
+        "L13"
+      ],
+      "source_prediction_ids": [
+        "clip_0003_L_0",
+        "clip_0003_R_0"
+      ],
+      "start_time": 10.5,
+      "end_time": 11.867,
+      "visual_time_boundaries": [
+        10.5,
+        12.13
+      ],
+      "motion_time_boundaries": [
+        1.133,
+        11.867
+      ],
+      "start_frame": 158,
+      "end_frame": 178,
+      "trajectory_rows": [
+        158,
+        178
+      ],
+      "hand_side": "left",
+      "object_category": "键盘",
+      "object_category_alt": [],
+      "object_instance_local_id": "clip_0003::键盘",
+      "visual_action": "rotate",
+      "motion_primitives": [
+        "hold",
+        "rotate"
+      ],
+      "semantic_action": "keyboard_touch_candidate",
+      "contact_state": "no_contact",
+      "motion_contact_cue": 0.918,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 0.0,
+        "pinch_median": 0.918
+      },
+      "end_time_original": null,
+      "trajectory_reference": {
+        "parquet": "demonstration.parquet",
+        "rows": [
+          158,
+          178
+        ],
+        "timestamp_range": [
+          10.533,
+          11.867
+        ]
+      },
+      "evidence_frames": {
+        "video": [
+          161,
+          165,
+          167,
+          170,
+          173,
+          178,
+          179
+        ],
+        "video_timestamps": [
+          10.733,
+          11.0,
+          11.133,
+          11.333,
+          11.533,
+          11.867,
+          11.933
+        ],
+        "trajectory_rows": [
+          158,
+          159,
+          160,
+          161,
+          162,
+          163,
+          164,
+          165,
+          166,
+          167,
+          168,
+          169,
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178
+        ]
+      },
+      "camera_evidence": [
+        "L",
+        "R"
+      ],
+      "alignment_status": "verified",
+      "alignment_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+      "quality_status": {
+        "observed": 1.0
+      },
+      "conflicts": [
+        "object_continuity_question",
+        "time_boundary_mismatch",
+        "weak_grasp_evidence"
+      ],
+      "needs_review": true,
+      "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "keyboard": {
+            "n": 68,
+            "dist_median": 0.736,
+            "iou_median": 0.026,
+            "near_ratio": 0.986,
+            "corr_median": 0.088
+          },
+          "mouse": {
+            "n": 43,
+            "dist_median": 1.094,
+            "iou_median": 0.0,
+            "near_ratio": 0.146,
+            "corr_median": 0.219
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": "keyboard",
+      "object_resolution": "resolved",
+      "semantic_action_before_grounding": "keyboard_touch_candidate",
+      "object_continuity_alt": [
+        "computer mouse",
+        "键盘"
+      ],
+      "bimanual_same_object": true,
+      "possible_duplicate_of": []
+    },
+    {
+      "event_id": "hoi_0007",
+      "source_clip_ids": [
+        "clip_0003"
+      ],
+      "source_segment_ids": [
+        "R5",
+        "B1"
+      ],
+      "source_prediction_ids": [
+        "clip_0003_L_1",
+        "clip_0003_R_1"
+      ],
+      "start_time": 10.5,
+      "end_time": 11.8,
+      "visual_time_boundaries": [
+        10.5,
+        12.13
+      ],
+      "motion_time_boundaries": [
+        8.533,
+        11.8
+      ],
+      "start_frame": 158,
+      "end_frame": 177,
+      "trajectory_rows": [
+        158,
+        177
+      ],
+      "hand_side": "right",
+      "object_category": "键盘",
+      "object_category_alt": [],
+      "object_instance_local_id": "clip_0003::键盘",
+      "visual_action": "rotate",
+      "motion_primitives": [
+        "pinch",
+        "rotate"
+      ],
+      "semantic_action": "keyboard_touch_candidate",
+      "contact_state": "no_contact",
+      "motion_contact_cue": 1.063,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 0.0,
+        "pinch_median": 1.063
+      },
+      "end_time_original": null,
+      "trajectory_reference": {
+        "parquet": "demonstration.parquet",
+        "rows": [
+          158,
+          177
+        ],
+        "timestamp_range": [
+          10.533,
+          11.8
+        ]
+      },
+      "evidence_frames": {
+        "video": [
+          161,
+          165,
+          167,
+          170,
+          173,
+          178,
+          179
+        ],
+        "video_timestamps": [
+          10.733,
+          11.0,
+          11.133,
+          11.333,
+          11.533,
+          11.867,
+          11.933
+        ],
+        "trajectory_rows": [
+          158,
+          159,
+          160,
+          161,
+          162,
+          163,
+          164,
+          165,
+          166,
+          167,
+          168,
+          169,
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177
+        ]
+      },
+      "camera_evidence": [
+        "L",
+        "R"
+      ],
+      "alignment_status": "verified",
+      "alignment_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+      "quality_status": {
+        "observed": 1.0
+      },
+      "conflicts": [
+        "object_continuity_question",
+        "time_boundary_mismatch",
+        "weak_grasp_evidence"
+      ],
+      "needs_review": true,
+      "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "keyboard": {
+            "n": 79,
+            "dist_median": 0.889,
+            "iou_median": 0.0,
+            "near_ratio": 0.976,
+            "corr_median": 0.068
+          },
+          "mouse": {
+            "n": 50,
+            "dist_median": 1.696,
+            "iou_median": 0.0,
+            "near_ratio": 0.11,
+            "corr_median": 0.043
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": "keyboard",
+      "object_resolution": "resolved",
+      "semantic_action_before_grounding": "keyboard_touch_candidate",
+      "object_continuity_alt": [
+        "computer mouse",
+        "键盘"
+      ],
+      "bimanual_same_object": true,
+      "possible_duplicate_of": []
+    }
+  ]
+}

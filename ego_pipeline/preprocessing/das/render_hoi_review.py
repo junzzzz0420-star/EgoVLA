@@ -247,6 +247,8 @@ def main():
     ap.add_argument('--lang', choices=('cn', 'en'), default='cn',
                     help='标注语言（cn 需中文字体，自动回退 en）')
     ap.add_argument('--minimal', action='store_true', help='不画左上注释框（只留红框+标签+轨迹条）')
+    ap.add_argument('--labels', default=None,
+                    help='hoi_frame_labels.parquet 路径（默认 hoi_fusion；修复版用 hoi_repaired）')
     args = ap.parse_args()
     sd = Path(args.structured_dir)
     out_dir = sd / 'hoi_fusion' / 'review_videos'
@@ -257,7 +259,9 @@ def main():
     events = ann['events']
     clips_dir = sd / 'visual_context/clips'
     # 展示标签与 hoi_fusion 同源（display 列），保证视频与 JSON 一致
-    disp = pd.read_parquet(sd / 'hoi_fusion/hoi_frame_labels.parquet')
+    fl_p = Path(args.labels) if args.labels else sd / 'hoi_fusion/hoi_frame_labels.parquet'
+    disp = pd.read_parquet(fl_p)
+    print(f'[render] 标签源: {fl_p}')
     # 腕部世界坐标在 fused(_filled).parquet（demonstration 未含 transl 列）
     fused = next(p for p in (sd.parent / 'fused_filled.parquet',
                              sd.parent / 'fused.parquet') if p.exists())
