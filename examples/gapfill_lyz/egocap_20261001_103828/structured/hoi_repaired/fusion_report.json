@@ -5,16 +5,16 @@
   "possible_duplicates": 0,
   "predictions_consumed": 14,
   "events": 8,
-  "unknown_object_events": 1,
+  "unknown_object_events": 3,
   "bimanual_same_object_events": 6,
   "conflicts_by_type": {
     "object_naming_mismatch": 1,
     "primitive_visual_mismatch": 2,
-    "weak_grasp_evidence": 7,
-    "boundary_refined_by_release": 3,
-    "object_vlm_detector_mismatch": 4,
-    "time_boundary_mismatch": 6,
-    "object_continuity_question": 6
+    "weak_grasp_evidence": 6,
+    "object_continuity_question": 6,
+    "object_vlm_detector_mismatch": 3,
+    "time_boundary_mismatch": 5,
+    "boundary_refined_by_release": 2
   },
-  "review_queue": 6
+  "review_queue": 0
 }

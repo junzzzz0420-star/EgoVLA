@@ -1,14 +1,50 @@
 [
   {
-    "event_id": "hoi_0004",
+    "event_id": "hoi_0000",
     "status": "applied",
-    "action": "mark_unknown",
+    "action": "mark_no_interaction",
     "reviewer": "jun"
   },
   {
     "event_id": "hoi_0001",
     "status": "applied",
-    "action": "adjust_boundary",
+    "action": "confirm",
+    "reviewer": "jun"
+  },
+  {
+    "event_id": "hoi_0002",
+    "status": "applied",
+    "action": "change_object",
+    "reviewer": "jun"
+  },
+  {
+    "event_id": "hoi_0003",
+    "status": "applied",
+    "action": "change_object",
+    "reviewer": "jun"
+  },
+  {
+    "event_id": "hoi_0004",
+    "status": "applied",
+    "action": "change_object",
+    "reviewer": "jun"
+  },
+  {
+    "event_id": "hoi_0005",
+    "status": "applied",
+    "action": "change_object",
+    "reviewer": "jun"
+  },
+  {
+    "event_id": "hoi_0006",
+    "status": "applied",
+    "action": "mark_no_interaction",
+    "reviewer": "jun"
+  },
+  {
+    "event_id": "hoi_0007",
+    "status": "applied",
+    "action": "mark_no_interaction",
     "reviewer": "jun"
   }
 ]

@@ -2,7 +2,7 @@
   "meta": {
     "schema_version": "hoi-v1",
     "fusion_rules_version": "v1",
-    "generated_at": "2026-10-22T05:41:45.775979+00:00",
+    "generated_at": "2026-10-22T07:32:38.060771+00:00",
     "inputs_md5": {
       "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/demonstration.parquet": "63a67043a1e4bb420a9341447d652226",
       "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/action_segments.json": "75c41c7050745b12e7a4c1218836678f",
@@ -37,14 +37,14 @@
         39
       ],
       "hand_side": "right",
-      "object_category": "电脑鼠标",
+      "object_category": null,
       "object_category_alt": [
         "鼠标"
       ],
       "object_instance_local_id": "clip_0000::电脑鼠标",
       "visual_action": "grasp",
       "motion_primitives": [],
-      "semantic_action": "keyboard_touch_candidate",
+      "semantic_action": "no_interaction",
       "contact_state": "visible_contact",
       "motion_contact_cue": 0.534,
       "grasp_evidence": {
@@ -140,8 +140,8 @@
         "primitive_visual_mismatch",
         "weak_grasp_evidence"
       ],
-      "needs_review": true,
-      "verification_status": "pending_review",
+      "needs_review": false,
+      "verification_status": "human_reviewed",
       "grounding": {
         "per_class": {
           "cup": {
@@ -173,7 +173,23 @@
       "object_detected": "keyboard",
       "object_resolution": "resolved",
       "semantic_action_before_grounding": "keyboard_touch_candidate",
-      "possible_duplicate_of": []
+      "possible_duplicate_of": [],
+      "human_decision": {
+        "action": "mark_no_interaction",
+        "reviewer": "jun",
+        "reason": "手悬在鼠标上方未接触（第2条裁决覆盖第1条误操作） [normalized: from reason text]",
+        "review_time": "2026-10-22T15:22:59",
+        "provenance": "human_review_normalized",
+        "original": {
+          "object": "电脑鼠标",
+          "hand": "right",
+          "semantic": "keyboard_touch_candidate",
+          "bounds": [
+            0.167,
+            2.633
+          ]
+        }
+      }
     },
     {
       "event_id": "hoi_0001",
@@ -190,8 +206,8 @@
         "clip_0000_L_0",
         "clip_0000_R_0"
       ],
-      "start_time": 0.67,
-      "end_time": 1.5,
+      "start_time": 0.667,
+      "end_time": 1.2,
       "visual_time_boundaries": [
         0.167,
         2.633
@@ -201,10 +217,10 @@
         2.133
       ],
       "start_frame": 11,
-      "end_frame": 22,
+      "end_frame": 18,
       "trajectory_rows": [
         11,
-        22
+        18
       ],
       "hand_side": "left",
       "object_category": "手机",
@@ -279,12 +295,7 @@
       "quality_status": {
         "observed": 1.0
       },
-      "conflicts": [
-        "boundary_refined_by_release",
-        "object_vlm_detector_mismatch",
-        "time_boundary_mismatch",
-        "weak_grasp_evidence"
-      ],
+      "conflicts": [],
       "needs_review": false,
       "verification_status": "human_reviewed",
       "grounding": {
@@ -312,17 +323,17 @@
       "object_resolution": "vlm_detector_mismatch",
       "possible_duplicate_of": [],
       "human_decision": {
-        "action": "adjust_boundary",
+        "action": "confirm",
         "reviewer": "jun",
-        "reason": "持握持续到1.5s",
-        "review_time": "2026-10-22T12:05:00",
-        "provenance": "human_review",
+        "reason": "确认：左手拿手机 [normalized: from reason text]",
+        "review_time": "2026-10-22T15:24:09",
+        "provenance": "human_review_normalized",
         "original": {
           "object": "手机",
           "hand": "left",
           "semantic": "candidate_object_grasp",
           "bounds": [
-            0.67,
+            0.667,
             1.2
           ]
         }
@@ -351,12 +362,12 @@
         98
       ],
       "hand_side": "right",
-      "object_category": "游戏手柄",
+      "object_category": "mouse",
       "object_category_alt": [],
       "object_instance_local_id": "clip_0001::游戏手柄",
       "visual_action": "grasp",
       "motion_primitives": [],
-      "semantic_action": "keyboard_touch_candidate",
+      "semantic_action": "candidate_object_grasp",
       "contact_state": "visible_contact",
       "motion_contact_cue": 0.454,
       "grasp_evidence": {
@@ -498,8 +509,8 @@
         "primitive_visual_mismatch",
         "weak_grasp_evidence"
       ],
-      "needs_review": true,
-      "verification_status": "pending_review",
+      "needs_review": false,
+      "verification_status": "human_reviewed",
       "grounding": {
         "per_class": {
           "cup": {
@@ -536,7 +547,23 @@
         "电脑鼠标"
       ],
       "bimanual_same_object": true,
-      "possible_duplicate_of": []
+      "possible_duplicate_of": [],
+      "human_decision": {
+        "action": "change_object",
+        "reviewer": "jun",
+        "reason": "理由优先于误选的confirm：右手正在握鼠标 [normalized: from reason text]",
+        "review_time": "2026-10-22T15:24:59",
+        "provenance": "human_review_normalized",
+        "original": {
+          "object": "游戏手柄",
+          "hand": "right",
+          "semantic": "keyboard_touch_candidate",
+          "bounds": [
+            1.9,
+            6.567
+          ]
+        }
+      }
     },
     {
       "event_id": "hoi_0003",
@@ -570,7 +597,7 @@
         91
       ],
       "hand_side": "left",
-      "object_category": "游戏手柄",
+      "object_category": "手机",
       "object_category_alt": [],
       "object_instance_local_id": "clip_0001::游戏手柄",
       "visual_action": "grasp",
@@ -707,8 +734,8 @@
         "object_vlm_detector_mismatch",
         "time_boundary_mismatch"
       ],
-      "needs_review": true,
-      "verification_status": "pending_review",
+      "needs_review": false,
+      "verification_status": "human_reviewed",
       "grounding": {
         "per_class": {
           "cup": {
@@ -744,7 +771,23 @@
         "游戏手柄"
       ],
       "bimanual_same_object": true,
-      "possible_duplicate_of": []
+      "possible_duplicate_of": [],
+      "human_decision": {
+        "action": "change_object",
+        "reviewer": "jun",
+        "reason": "左手正在拿手机 [normalized: from reason text]",
+        "review_time": "2026-10-22T15:25:55",
+        "provenance": "human_review_normalized",
+        "original": {
+          "object": "游戏手柄",
+          "hand": "left",
+          "semantic": "candidate_object_grasp",
+          "bounds": [
+            2.4,
+            6.067
+          ]
+        }
+      }
     },
     {
       "event_id": "hoi_0004",
@@ -762,8 +805,8 @@
         "clip_0002_L_0",
         "clip_0002_R_0"
       ],
-      "start_time": 6.03,
-      "end_time": 8.2,
+      "start_time": 6.033,
+      "end_time": 8.333,
       "visual_time_boundaries": [
         6.033,
         11.233
@@ -773,13 +816,13 @@
         10.733
       ],
       "start_frame": 91,
-      "end_frame": 123,
+      "end_frame": 124,
       "trajectory_rows": [
         91,
-        123
+        124
       ],
       "hand_side": "left",
-      "object_category": null,
+      "object_category": "手机",
       "object_category_alt": [],
       "object_instance_local_id": "clip_0002::computer_mouse",
       "visual_action": "grasp",
@@ -789,7 +832,7 @@
         "rotate",
         "transport"
       ],
-      "semantic_action": "unknown_action",
+      "semantic_action": "candidate_release",
       "contact_state": "visible_contact",
       "motion_contact_cue": 0.625,
       "grasp_evidence": {
@@ -941,18 +984,18 @@
       "bimanual_same_object": true,
       "possible_duplicate_of": [],
       "human_decision": {
-        "action": "mark_unknown",
+        "action": "change_object",
         "reviewer": "jun",
-        "reason": "逐帧复核未见握持，物体不可确认",
-        "review_time": "2026-10-22T12:00:00",
-        "provenance": "human_review",
+        "reason": "左手正在放下手机 [normalized: from reason text]",
+        "review_time": "2026-10-22T15:26:31",
+        "provenance": "human_review_normalized",
         "original": {
           "object": "computer mouse",
           "hand": "left",
           "semantic": "candidate_object_grasp",
           "bounds": [
-            6.03,
-            8.33
+            6.033,
+            8.333
           ]
         }
       }
@@ -991,7 +1034,7 @@
         133
       ],
       "hand_side": "right",
-      "object_category": "computer mouse",
+      "object_category": "mouse",
       "object_category_alt": [],
       "object_instance_local_id": "clip_0002::computer_mouse",
       "visual_action": "grasp",
@@ -1105,8 +1148,8 @@
         "time_boundary_mismatch",
         "weak_grasp_evidence"
       ],
-      "needs_review": true,
-      "verification_status": "pending_review",
+      "needs_review": false,
+      "verification_status": "human_reviewed",
       "grounding": {
         "per_class": {
           "cup": {
@@ -1142,7 +1185,23 @@
         "游戏手柄"
       ],
       "bimanual_same_object": true,
-      "possible_duplicate_of": []
+      "possible_duplicate_of": [],
+      "human_decision": {
+        "action": "change_object",
+        "reviewer": "jun",
+        "reason": "右手正握住鼠标 [normalized: from reason text]",
+        "review_time": "2026-10-22T15:27:16",
+        "provenance": "human_review_normalized",
+        "original": {
+          "object": "computer mouse",
+          "hand": "right",
+          "semantic": "candidate_object_grasp",
+          "bounds": [
+            7.333,
+            8.933
+          ]
+        }
+      }
     },
     {
       "event_id": "hoi_0006",
@@ -1174,7 +1233,7 @@
         178
       ],
       "hand_side": "left",
-      "object_category": "键盘",
+      "object_category": null,
       "object_category_alt": [],
       "object_instance_local_id": "clip_0003::键盘",
       "visual_action": "rotate",
@@ -1182,7 +1241,7 @@
         "hold",
         "rotate"
       ],
-      "semantic_action": "keyboard_touch_candidate",
+      "semantic_action": "no_interaction",
       "contact_state": "no_contact",
       "motion_contact_cue": 0.918,
       "grasp_evidence": {
@@ -1258,8 +1317,8 @@
         "time_boundary_mismatch",
         "weak_grasp_evidence"
       ],
-      "needs_review": true,
-      "verification_status": "pending_review",
+      "needs_review": false,
+      "verification_status": "human_reviewed",
       "grounding": {
         "per_class": {
           "keyboard": {
@@ -1289,7 +1348,23 @@
         "键盘"
       ],
       "bimanual_same_object": true,
-      "possible_duplicate_of": []
+      "possible_duplicate_of": [],
+      "human_decision": {
+        "action": "mark_no_interaction",
+        "reviewer": "jun",
+        "reason": "双手悬空张开 [normalized: from reason text]",
+        "review_time": "2026-10-22T15:27:58",
+        "provenance": "human_review_normalized",
+        "original": {
+          "object": "键盘",
+          "hand": "left",
+          "semantic": "keyboard_touch_candidate",
+          "bounds": [
+            10.5,
+            11.867
+          ]
+        }
+      }
     },
     {
       "event_id": "hoi_0007",
@@ -1321,7 +1396,7 @@
         177
       ],
       "hand_side": "right",
-      "object_category": "键盘",
+      "object_category": null,
       "object_category_alt": [],
       "object_instance_local_id": "clip_0003::键盘",
       "visual_action": "rotate",
@@ -1329,7 +1404,7 @@
         "pinch",
         "rotate"
       ],
-      "semantic_action": "keyboard_touch_candidate",
+      "semantic_action": "no_interaction",
       "contact_state": "no_contact",
       "motion_contact_cue": 1.063,
       "grasp_evidence": {
@@ -1404,8 +1479,8 @@
         "time_boundary_mismatch",
         "weak_grasp_evidence"
       ],
-      "needs_review": true,
-      "verification_status": "pending_review",
+      "needs_review": false,
+      "verification_status": "human_reviewed",
       "grounding": {
         "per_class": {
           "keyboard": {
@@ -1435,7 +1510,23 @@
         "键盘"
       ],
       "bimanual_same_object": true,
-      "possible_duplicate_of": []
+      "possible_duplicate_of": [],
+      "human_decision": {
+        "action": "mark_no_interaction",
+        "reviewer": "jun",
+        "reason": "双手悬空张开 [normalized: from reason text]",
+        "review_time": "2026-10-22T15:28:35",
+        "provenance": "human_review_normalized",
+        "original": {
+          "object": "键盘",
+          "hand": "right",
+          "semantic": "keyboard_touch_candidate",
+          "bounds": [
+            10.5,
+            11.8
+          ]
+        }
+      }
     }
   ]
 }

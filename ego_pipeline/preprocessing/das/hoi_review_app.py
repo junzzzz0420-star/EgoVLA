@@ -168,7 +168,8 @@ def make_app(sd: Path, export: Path):
 <div class='sec'><b>⑥ 你的裁决：</b>
 <form method='post' action='/event/{i}'>
  裁决: <select name='action'>{opts}</select>（看图后选一个）<br><br>
- 改物体时填: <input name='object' placeholder='如 手机 或 留空'>（无交互/不确定不用填）<br>
+ 改物体时填: <input name='object' placeholder='如 手机 或 留空'>（无交互/不确定不用填；填 null 表示无物体）<br>
+ 改动作时填: <input name='semantic' placeholder='如 抓取/持握/释放/键盘触碰'>（仅改动作时填）<br>
  改边界时填: 起点 <input name='t0' size=5 value='{e['start_time']}'> 秒 ～
  终点 <input name='t1' size=5 value='{e['end_time']}'> 秒<br><br>
  理由(必填): <input name='reason' size=60 placeholder='例如：手悬在鼠标上方未接触，实际在敲键盘'><br>
@@ -186,14 +187,14 @@ def make_app(sd: Path, export: Path):
             'event_id': e['event_id'],
             'original_prediction': {
                 'object': e['object_category'], 'hand': e['hand_side'],
-                'semantic': e['semantic_action'],
+                'semantic': (f.get('semantic') or e['semantic_action']),
                 'bounds': [e['start_time'], e['end_time']]},
             'action': f['action'],
             'reviewed_label': {
                 'hand': e['hand_side'],
-                'object': (None if f.get('object') in ('null', '') else
+                'object': (None if f.get('object') == 'null' else
                            (f.get('object') or e['object_category'])),
-                'semantic': e['semantic_action'],
+                'semantic': (f.get('semantic') or e['semantic_action']),
                 'bounds': [float(f['t0']), float(f['t1'])]},
             'correction_type': f['action'],
             'evidence_frame_ids': [round(e['start_time'] + k *

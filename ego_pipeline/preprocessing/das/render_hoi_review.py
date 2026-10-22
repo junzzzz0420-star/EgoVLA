@@ -247,11 +247,12 @@ def main():
     ap.add_argument('--lang', choices=('cn', 'en'), default='cn',
                     help='标注语言（cn 需中文字体，自动回退 en）')
     ap.add_argument('--minimal', action='store_true', help='不画左上注释框（只留红框+标签+轨迹条）')
+    ap.add_argument('--out-dir', default=None, help='输出目录')
     ap.add_argument('--labels', default=None,
                     help='hoi_frame_labels.parquet 路径（默认 hoi_fusion；修复版用 hoi_repaired）')
     args = ap.parse_args()
     sd = Path(args.structured_dir)
-    out_dir = sd / 'hoi_fusion' / 'review_videos'
+    out_dir = Path(args.out_dir) if args.out_dir else sd / 'hoi_fusion' / 'review_videos'
     out_dir.mkdir(parents=True, exist_ok=True)
     demo = pd.read_parquet(sd / 'demonstration.parquet')
     clips = json.loads((sd / 'visual_context/clip_manifest.json').read_text())

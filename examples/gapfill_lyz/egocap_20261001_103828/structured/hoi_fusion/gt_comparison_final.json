@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "gt_source": "review_decisions_normalized (reviewer=jun, 2026-10-22)",
+    "note": "正式人工裁决（含2处规范化：hoi_0000取第2条、hoi_0002理由优先），非 provisional"
+  },
+  "hand_identity_accuracy": 0.88,
+  "auto_object_agreement_with_human": 0.25,
+  "human_confirmed_as_is": "1/8",
+  "human_corrections": {
+    "hoi_0000": {
+      "from": "电脑鼠标/keyboard_touch_candidate",
+      "to": "None/no_interaction",
+      "reason": "手悬在鼠标上方未接触（第2条裁决覆盖第1条误操作） [normalized: from reason text]"
+    },
+    "hoi_0002": {
+      "from": "游戏手柄/keyboard_touch_candidate",
+      "to": "mouse/candidate_object_grasp",
+      "reason": "理由优先于误选的confirm：右手正在握鼠标 [normalized: from reason text]"
+    },
+    "hoi_0003": {
+      "from": "游戏手柄/candidate_object_grasp",
+      "to": "手机/candidate_object_grasp",
+      "reason": "左手正在拿手机 [normalized: from reason text]"
+    },
+    "hoi_0004": {
+      "from": "computer mouse/candidate_object_grasp",
+      "to": "手机/candidate_release",
+      "reason": "左手正在放下手机 [normalized: from reason text]"
+    },
+    "hoi_0005": {
+      "from": "computer mouse/candidate_object_grasp",
+      "to": "mouse/candidate_object_grasp",
+      "reason": "右手正握住鼠标 [normalized: from reason text]"
+    },
+    "hoi_0006": {
+      "from": "键盘/keyboard_touch_candidate",
+      "to": "None/no_interaction",
+      "reason": "双手悬空张开 [normalized: from reason text]"
+    },
+    "hoi_0007": {
+      "from": "键盘/keyboard_touch_candidate",
+      "to": "None/no_interaction",
+      "reason": "双手悬空张开 [normalized: from reason text]"
+    }
+  },
+  "review_rate_after_repair": 0.875,
+  "workflow": "audit→review→repair→re-render 完成；视频/JSON/逐帧 同源",
+  "remaining_review": []
+}
