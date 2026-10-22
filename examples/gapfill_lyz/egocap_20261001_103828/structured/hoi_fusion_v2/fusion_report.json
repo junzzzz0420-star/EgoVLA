@@ -1,0 +1,19 @@
+{
+  "predictions_total": 14,
+  "duplicates_corroborating": 5,
+  "merged": 0,
+  "possible_duplicates": 0,
+  "predictions_consumed": 14,
+  "events": 8,
+  "unknown_object_events": 4,
+  "bimanual_same_object_events": 6,
+  "conflicts_by_type": {
+    "object_naming_mismatch": 1,
+    "primitive_visual_mismatch": 2,
+    "weak_grasp_evidence": 7,
+    "boundary_refined_by_release": 3,
+    "object_vlm_detector_mismatch": 4,
+    "time_boundary_mismatch": 6
+  },
+  "review_queue": 8
+}

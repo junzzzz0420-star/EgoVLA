@@ -31,7 +31,7 @@ import numpy as np
 import pandas as pd
 
 SCHEMA_VERSION = 'hoi-v1'
-FUSION_RULES_VERSION = 'v1'
+FUSION_RULES_VERSION = 'v1+v2experimental(detector-first, GT 0/8 — 默认仍为保守仲裁)'
 TIME_UNC = ('+-16.7 ms video resampling (Step 2.1 verified mapping); '
             'vlm_time_estimate itself is a coarse model guess')
 BOUNDARY_DIFF_S = 0.3     # 视觉/3D 边界差异超过此值记冲突
@@ -103,22 +103,39 @@ def ground_events(events, sd: Path):
                                        if gg.move_corr.notna().any() else None)}
         passed = [c for c, v in ev.items()
                   if v['dist_median'] < 0.95 and v['near_ratio'] > 0.25]
+        # v2 握持遮挡线索：手与物体 IoU 高 = 物体可能在手中/被手遮（漏检主因）
+        held = [c for c, v in ev.items() if v['iou_median'] > 0.25]
         e['grounding'] = {'per_class': ev,
                           'environment_classes_excluded': sorted(big)}
+        vlm = e['object_category']
         if len(passed) == 1:
             e['object_detected'] = passed[0]
             e['object_resolution'] = 'resolved'
+            e['object_category'] = passed[0]          # 检测器优先
+            e['object_source'] = 'detector'
+        elif held:
+            e['object_detected'] = held[0]
+            e['object_resolution'] = 'held_occlusion_clue'
+            e['object_source'] = 'iou_clue'
         elif ev:
             e['object_detected'] = None
-            e['object_resolution'] = 'vlm_detector_mismatch'                 if e['object_category'] else 'no_consensus'
+            e['object_resolution'] = 'vlm_detector_mismatch'
+            e['object_vlm_claim'] = vlm               # v2: VLM 降级为候选
+            e['object_category'] = None
+            e['object_source'] = 'unknown'
             e['conflicts'] = sorted(set(e['conflicts'] +
                                         ['object_vlm_detector_mismatch']))
             e['needs_review'] = True
         else:
             e['object_detected'] = None
             e['object_resolution'] = 'no_object_near_hand'
+            e['object_vlm_claim'] = vlm
+            e['object_category'] = None
+            e['object_source'] = 'unknown'
             e['conflicts'] = sorted(set(e['conflicts'] + ['no_object_near_hand']))
             e['needs_review'] = True
+        if vlm and e.get('object_category') != vlm and 'object_vlm_claim' not in e:
+            e['object_vlm_claim'] = vlm               # 检测改名时保留 VLM 原话
         # 键盘触碰语义：解析到键盘且 3D 抓握证据弱 → 不称 HOLD/GRASP
         det = e.get('object_detected')
         if det == 'keyboard' and e.get('grasp_evidence', {}).get(

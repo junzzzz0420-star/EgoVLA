@@ -108,14 +108,32 @@ def hand_lines(e):
 
 
 def render_clip(clip, events, demo, wrists, clips_dir, out_path, det, disp,
-                lang='cn', minimal=False, fps_hint=15.0):
+                lang='cn', minimal=False, fps_hint=15.0, hd_export=None,
+                hd_offset=0.0):
+    """hd_export 提供时，画面取转换件 HD 原帧（round((offset+t)*30)），
+    不裁剪不降清；否则回退 rig_input 低清帧。"""
     caps = {}
+    hd = {}
     for key, ref_key in (('L', 'left_video_ref'), ('R', 'right_video_ref')):
         ref = clip.get(ref_key)
         p = clips_dir / Path(ref).name if ref else None
         caps[key] = cv2.VideoCapture(str(p)) if p and p.exists() else None
+        if hd_export is not None:
+            hp = Path(hd_export) / f'camera{0 if key == "L" else 1}.mp4'
+            hd[key] = cv2.VideoCapture(str(hp)) if hp.exists() else None
+    if hd and (hd.get('L') is None or not hd['L'].isOpened()):
+        hd = {}
     if caps['L'] is None or not caps['L'].isOpened():
         raise FileNotFoundError(f'{clip["clip_id"]}: 左目 clip 视频不可读')
+
+    def grab_hd(key, k):
+        cap = hd.get(key)
+        if cap is None:
+            return None
+        cap.set(cv2.CAP_PROP_POS_FRAMES,
+                int(round((hd_offset + clip['start_time'] + k / fps_hint) * 30.0)))
+        ok, fr = cap.read()
+        return fr if ok else None
     n_frames = int(caps['L'].get(cv2.CAP_PROP_FRAME_COUNT))
 
     ts = demo['timestamp'].to_numpy(dtype=float)
@@ -125,8 +143,15 @@ def render_clip(clip, events, demo, wrists, clips_dir, out_path, det, disp,
     lo, hi = np.nanmin(allxy, 0), np.nanmax(allxy, 0)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    okL, fL = caps['L'].read()
-    okR, fR = (caps['R'].read() if caps['R'] else (False, None))
+    k0 = 0
+    fL = grab_hd('L', k0); okL = fL is not None
+    if not okL:
+        okL, fL = caps['L'].read()
+    fR = grab_hd('R', k0) if hd else None
+    if fR is None and caps['R']:
+        okR2, fR = caps['R'].read()
+    elif hd and hd.get('R') is None:
+        fR = None
     H, W = fL.shape[:2]
     W2 = W * 2
     probe = subprocess.Popen(
@@ -230,8 +255,13 @@ def render_clip(clip, events, demo, wrists, clips_dir, out_path, det, disp,
         mains_cur = (events_at(ev, t)[0][:2], events_at(ev, t)[0][:2])
         probe.stdin.write(overlay(k, fL, fR).tobytes())
         k += 1
-        okL, fL = caps['L'].read()
-        okR, fR = (caps['R'].read() if caps['R'] else (False, None))
+        fL = grab_hd('L', k); okL = fL is not None
+        if not okL:
+            okL, fL = caps['L'].read()
+        fR = grab_hd('R', k) if hd else None
+        if fR is None and caps['R']:
+            okR2, fR = caps['R'].read()
+            fR = fR if okR2 else None
     for cap in caps.values():
         if cap is not None:
             cap.release()
@@ -248,6 +278,8 @@ def main():
                     help='标注语言（cn 需中文字体，自动回退 en）')
     ap.add_argument('--minimal', action='store_true', help='不画左上注释框（只留红框+标签+轨迹条）')
     ap.add_argument('--out-dir', default=None, help='输出目录')
+    ap.add_argument('--hd-export', default=None, help='转换件目录：画面改用 HD 原帧渲染')
+    ap.add_argument('--hd-offset', type=float, default=2.0, help='窗口起点秒（HD 帧换算）')
     ap.add_argument('--labels', default=None,
                     help='hoi_frame_labels.parquet 路径（默认 hoi_fusion；修复版用 hoi_repaired）')
     args = ap.parse_args()
@@ -283,7 +315,8 @@ def main():
     for clip in clips:
         p = render_clip(clip, events, demo, wrists, clips_dir,
                         out_dir / f'{clip["clip_id"]}_review.mp4', det, disp,
-                        lang=args.lang, minimal=args.minimal)
+                        lang=args.lang, minimal=args.minimal,
+                        hd_export=args.hd_export, hd_offset=args.hd_offset)
         print(f'[render] {p}')
     print(f'[render] {len(clips)} 个审阅视频 -> {out_dir}')
 

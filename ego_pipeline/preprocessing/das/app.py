@@ -81,6 +81,23 @@ def list_videos() -> list[tuple[str, str]]:
     return out
 
 
+_rev = {'proc': None, 'url': None}
+
+
+def _launch_review(out_dir, export):
+    """为本次运行拉起人工复核界面（端口 7864，已运行则复用）。"""
+    if _rev['proc'] is not None and _rev['proc'].poll() is None:
+        return _rev['url']
+    import subprocess as _sp
+    _rev['proc'] = _sp.Popen(
+        [str(PY), str(HERE / 'hoi_review_app.py'),
+         '--structured-dir', str(out_dir / 'structured'),
+         '--export', str(export), '--port', '7864'],
+        cwd=str(REPO), stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+    _rev['url'] = 'http://localhost:7864'
+    return _rev['url']
+
+
 def _watch(proc, out_dir, mode):
     video = None
     for _ in range(60 * 60 * 4):               # 最多 4h
@@ -89,6 +106,10 @@ def _watch(proc, out_dir, mode):
         time.sleep(1)
     # 找该模式最新时间戳目录里的视频
     cands = sorted((out_dir / 'viz').glob(f'{mode}_*/multiview.mp4'))
+    review = sorted((out_dir / 'structured/hoi_fusion/review_videos').glob('*_review.mp4'))
+    if review:
+        _job['videos'] = [str(p) for p in review]
+        _job['review_url'] = _launch_review(out_dir, _job.get('last_export') or out_dir)
     if cands:
         video = str(cands[-1])
     with _lock:
@@ -211,7 +232,10 @@ async function poll(){{
  else em.style.display='none';
  if(!j.done){{setTimeout(poll,2000);return;}}
  document.getElementById('run').disabled=false;
- if(j.video){{const v=document.getElementById('vid');v.src='/video?p='+encodeURIComponent(j.video);v.style.display='block';v.scrollIntoView({{behavior:'smooth'}});}}}}
+ if(j.video){{const v=document.getElementById('vid');v.src='/video?p='+encodeURIComponent(j.video);v.style.display='block';}}
+ if(j.videos&&j.videos.length){{const d=document.getElementById('rv');d.style.display='block';
+   d.innerHTML='<b>语义标注视频(中文红框):</b><br>'+j.videos.map((p,i)=>`<video controls width="640" src="/video?p=${{encodeURIComponent(p)}}"></video>`).join('<br>');}}}}
+ if(j.review_url){{document.getElementById('rvlink').style.display='inline';document.getElementById('rvlink').href=j.review_url;}}
 </script></body></html>'''
 
 
@@ -244,6 +268,7 @@ def api_run():
             return jsonify(ok=False,
                            error=f'窗口({start}~{start + duration}s)超出该录制时长({total:.1f}s)，请调小起点/时长')
         src_arg = ['--mcap', mcap] if mcap.endswith('.mcap') else ['--input-export', mcap]
+        _job['last_export'] = mcap if not mcap.endswith('.mcap') else None
         out = OUT_ROOT / f"{Path(mcap).stem[:40]}_{mode}" if mcap.endswith('.mcap') \
             else OUT_ROOT / f"egocap_{Path(mcap).name}_{mode}"
         tag = uuid.uuid4().hex[:6]
@@ -294,6 +319,8 @@ def api_run():
 def api_status():
     with _lock:
         return jsonify(done=_job['done'], video=_job['video'],
+                       videos=_job.get('videos'),
+                       review_url=_job.get('review_url'),
                        error=_job['error'], log='\n'.join(_job['log'][-3000:]))
 
 

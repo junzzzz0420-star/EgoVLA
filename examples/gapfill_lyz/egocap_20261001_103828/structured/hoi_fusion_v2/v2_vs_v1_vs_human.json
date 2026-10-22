@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "verdict": "v2 (detector-first) NOT better on 8-event GT: v1 2/8 correct, v2 0/8 (4 wrong keyboard, 4 unknown). Detector false-resolves keyboard on no-interaction spans and misses held phone/mouse. VLM-only also 2/8. Conclusion: hybrid + human review stays mandatory; v2 kept as experimental, v1 remains default in hoi_fusion/"
+  },
+  "v1": "correct 2/8  wrong 6",
+  "v2": "correct 0/8  wrong 4  unknown 4"
+}

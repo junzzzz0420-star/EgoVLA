@@ -1,0 +1,237 @@
+[
+  {
+    "event_id": "hoi_0000",
+    "reasons": [
+      "object_naming_mismatch",
+      "primitive_visual_mismatch",
+      "weak_grasp_evidence"
+    ],
+    "evidence": {
+      "keyframes_dir": "visual_semantics/review",
+      "trajectory_rows": [
+        3,
+        39
+      ],
+      "video_frames": [
+        6,
+        10,
+        11,
+        16,
+        21,
+        27,
+        32,
+        37,
+        39
+      ]
+    }
+  },
+  {
+    "event_id": "hoi_0001",
+    "reasons": [
+      "boundary_refined_by_release",
+      "object_vlm_detector_mismatch",
+      "time_boundary_mismatch",
+      "weak_grasp_evidence"
+    ],
+    "evidence": {
+      "keyframes_dir": "visual_semantics/review",
+      "trajectory_rows": [
+        11,
+        18
+      ],
+      "video_frames": [
+        6,
+        10,
+        11,
+        16,
+        21,
+        27,
+        32,
+        37,
+        39
+      ]
+    }
+  },
+  {
+    "event_id": "hoi_0002",
+    "reasons": [
+      "primitive_visual_mismatch",
+      "weak_grasp_evidence"
+    ],
+    "evidence": {
+      "keyframes_dir": "visual_semantics/review",
+      "trajectory_rows": [
+        29,
+        98
+      ],
+      "video_frames": [
+        31,
+        32,
+        36,
+        41,
+        46,
+        51,
+        56,
+        58,
+        61,
+        66,
+        71,
+        76,
+        81,
+        86,
+        91,
+        96
+      ]
+    }
+  },
+  {
+    "event_id": "hoi_0003",
+    "reasons": [
+      "object_vlm_detector_mismatch",
+      "time_boundary_mismatch"
+    ],
+    "evidence": {
+      "keyframes_dir": "visual_semantics/review",
+      "trajectory_rows": [
+        36,
+        91
+      ],
+      "video_frames": [
+        31,
+        32,
+        36,
+        41,
+        46,
+        51,
+        56,
+        58,
+        61,
+        66,
+        71,
+        76,
+        81,
+        86,
+        91,
+        96
+      ]
+    }
+  },
+  {
+    "event_id": "hoi_0004",
+    "reasons": [
+      "boundary_refined_by_release",
+      "object_vlm_detector_mismatch",
+      "time_boundary_mismatch",
+      "weak_grasp_evidence"
+    ],
+    "evidence": {
+      "keyframes_dir": "visual_semantics/review",
+      "trajectory_rows": [
+        91,
+        124
+      ],
+      "video_frames": [
+        93,
+        94,
+        98,
+        103,
+        108,
+        113,
+        119,
+        124,
+        129,
+        134,
+        139,
+        145,
+        150,
+        155,
+        157,
+        160,
+        161,
+        165
+      ]
+    }
+  },
+  {
+    "event_id": "hoi_0005",
+    "reasons": [
+      "boundary_refined_by_release",
+      "object_vlm_detector_mismatch",
+      "time_boundary_mismatch",
+      "weak_grasp_evidence"
+    ],
+    "evidence": {
+      "keyframes_dir": "visual_semantics/review",
+      "trajectory_rows": [
+        110,
+        133
+      ],
+      "video_frames": [
+        93,
+        94,
+        98,
+        103,
+        108,
+        113,
+        119,
+        124,
+        129,
+        134,
+        139,
+        145,
+        150,
+        155,
+        157,
+        160,
+        161,
+        165
+      ]
+    }
+  },
+  {
+    "event_id": "hoi_0006",
+    "reasons": [
+      "time_boundary_mismatch",
+      "weak_grasp_evidence"
+    ],
+    "evidence": {
+      "keyframes_dir": "visual_semantics/review",
+      "trajectory_rows": [
+        158,
+        178
+      ],
+      "video_frames": [
+        161,
+        165,
+        167,
+        170,
+        173,
+        178,
+        179
+      ]
+    }
+  },
+  {
+    "event_id": "hoi_0007",
+    "reasons": [
+      "time_boundary_mismatch",
+      "weak_grasp_evidence"
+    ],
+    "evidence": {
+      "keyframes_dir": "visual_semantics/review",
+      "trajectory_rows": [
+        158,
+        177
+      ],
+      "video_frames": [
+        161,
+        165,
+        167,
+        170,
+        173,
+        178,
+        179
+      ]
+    }
+  }
+]
