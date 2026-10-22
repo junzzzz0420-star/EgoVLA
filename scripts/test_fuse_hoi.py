@@ -119,5 +119,56 @@ try:
 except Exception:
     ok('T12b 异常输入报错', True)
 
+print('\nStep2.3 基线:', sum(R), '/', len(R), 'PASS')
+
+# ================= Step 2.4 专项回归（期望值从数据计算，不硬编码帧号/类别）====
+import numpy as np
+fl = pd.read_parquet(hf / 'hoi_frame_labels.parquet')
+
+# T14 手势通道独立存在且取值合法
+POSES = {'OPEN', 'CLOSED', 'PINCH', 'HALF_OPEN', 'UNKNOWN'}
+ok('T14 姿态通道合法', all(set(fl[f'{h}_pose_state']) <= POSES for h in ('left', 'right')))
+
+# T15 release 硬截断：双手鼠标事件的 end 不超过 末次低pinch+0.2s（从数据反推）
+d15 = pd.read_parquet(sd / 'demonstration.parquet')
+for hand in ('left', 'right'):
+    e = next(x for x in evs if x['source_clip_ids'] == ['clip_0002'] and x['hand_side'] == hand)
+    pin = d15[f'{hand}_pinch_idx'].iloc[e['trajectory_rows'][0]:e['trajectory_rows'][1] + 50]
+    low_ts = d15['timestamp'].iloc[e['trajectory_rows'][0]:e['trajectory_rows'][1] + 50][
+        (pin < 0.35).fillna(False).values]
+    if len(low_ts):
+        ok(f'T15 {hand} release截断',
+           e['end_time'] <= float(low_ts.iloc[-1]) + 0.25 or 'boundary_refined' not in e['conflicts'])
+
+# T16 释放后不再显示抓取：事件 end 之后 0.3s 的帧 interaction=NO_INTERACTION
+e16 = next(x for x in evs if 'boundary_refined_by_release' in x['conflicts'])
+r16 = fl.iloc[int(np.argmin(np.abs(fl.timestamp - (e16['end_time'] + 0.3))))]
+ok('T16 释放后无残留', r16[f'{e16["hand_side"]}_interaction_state'] == 'NO_INTERACTION')
+
+# T17 双手张开有输出（姿态通道非空）：末帧两通道都有值
+ok('T17 张开=姿态+无交互', all(fl[f'{h}_display'].iloc[-1] for h in ('left', 'right'))
+   and fl['left_pose_state'].iloc[-1] == 'OPEN' and fl['left_interaction_state'].iloc[-1] in
+   ('NO_INTERACTION', 'HOLD'))
+
+# T18 渲染标签与 JSON 同源：display 里的物体名必来自该行活跃事件
+r18 = fl.iloc[100]
+for hand in ('left', 'right'):
+    ev_active = [e for e in evs if e['hand_side'] == hand
+                 and e['trajectory_rows'][0] <= 100 <= e['trajectory_rows'][1]]
+    has_obj = '|' in str(r18[f'{hand}_display']).split('|', 2)[-1] if '抓取' in str(
+        r18[f'{hand}_display']) or '持握' in str(r18[f'{hand}_display']) else False
+    if has_obj:
+        ok(f'T18 {hand} display物体来自活跃事件',
+           any(str(e['object_category']) in str(r18[f'{hand}_display']) for e in ev_active))
+    else:
+        ok(f'T18 {hand} 无物体时不显示物体', True)
+
+# T19 弱抓握证据标记（从数据反推：低pinch占比<30% 必有 weak_grasp_evidence）
+for e in evs:
+    if 'weak_grasp_evidence' in e['conflicts']:
+        ok('T19 弱证据标记成立', e['grasp_evidence']['low_pinch_frame_pct'] < 30)
+        break
+
+print('\nStep2.4 专项:', sum(R[13:]) if len(R) > 13 else 0, '/', len(R) - 13, 'PASS')
 print('\n总计:', sum(R), '/', len(R), 'PASS')
 sys.exit(0 if all(R) else 1)

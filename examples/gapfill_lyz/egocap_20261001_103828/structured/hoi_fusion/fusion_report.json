@@ -10,7 +10,10 @@
   "conflicts_by_type": {
     "object_naming_mismatch": 1,
     "primitive_visual_mismatch": 2,
-    "time_boundary_mismatch": 6
+    "weak_grasp_evidence": 7,
+    "boundary_refined_by_release": 3,
+    "time_boundary_mismatch": 6,
+    "object_continuity_question": 6
   },
   "review_queue": 8
 }

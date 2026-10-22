@@ -2,12 +2,12 @@
   "meta": {
     "schema_version": "hoi-v1",
     "fusion_rules_version": "v1",
-    "generated_at": "2026-10-22T03:01:00.833829+00:00",
+    "generated_at": "2026-10-22T03:34:28.290112+00:00",
     "inputs_md5": {
-      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/demonstration.parquet": "63a67043a1e4bb420a9341447d652226",
-      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/action_segments.json": "75c41c7050745b12e7a4c1218836678f",
-      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/visual_context/clip_manifest.json": "3bee48a2e00a14072115a3ab6d98cbb2",
-      "/home/jun/Ego2LeRobot/examples/gapfill_lyz/egocap_20261001_103828/structured/visual_semantics/visual_predictions.json": "5bec38403f94efc954d311278360a886"
+      "examples/gapfill_lyz/egocap_20261001_103828/structured/demonstration.parquet": "63a67043a1e4bb420a9341447d652226",
+      "examples/gapfill_lyz/egocap_20261001_103828/structured/action_segments.json": "75c41c7050745b12e7a4c1218836678f",
+      "examples/gapfill_lyz/egocap_20261001_103828/structured/visual_context/clip_manifest.json": "3bee48a2e00a14072115a3ab6d98cbb2",
+      "examples/gapfill_lyz/egocap_20261001_103828/structured/visual_semantics/visual_predictions.json": "5bec38403f94efc954d311278360a886"
     },
     "time_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
     "notes": "multimodal fusion CANDIDATES; primitives are auxiliary evidence only; not robot ground truth"
@@ -47,6 +47,11 @@
       "semantic_action": "candidate_object_grasp",
       "contact_state": "visible_contact",
       "motion_contact_cue": 0.534,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 0.0,
+        "pinch_median": 0.534
+      },
+      "end_time_original": null,
       "trajectory_reference": {
         "parquet": "demonstration.parquet",
         "rows": [
@@ -132,7 +137,8 @@
       },
       "conflicts": [
         "object_naming_mismatch",
-        "primitive_visual_mismatch"
+        "primitive_visual_mismatch",
+        "weak_grasp_evidence"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
@@ -154,7 +160,7 @@
         "clip_0000_R_0"
       ],
       "start_time": 0.667,
-      "end_time": 2.133,
+      "end_time": 1.2,
       "visual_time_boundaries": [
         0.167,
         2.633
@@ -164,10 +170,10 @@
         2.133
       ],
       "start_frame": 11,
-      "end_frame": 31,
+      "end_frame": 18,
       "trajectory_rows": [
         11,
-        31
+        18
       ],
       "hand_side": "left",
       "object_category": "手机",
@@ -183,15 +189,20 @@
       "semantic_action": "candidate_object_grasp",
       "contact_state": "visible_contact",
       "motion_contact_cue": 0.387,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 29.0,
+        "pinch_median": 0.387
+      },
+      "end_time_original": 2.133,
       "trajectory_reference": {
         "parquet": "demonstration.parquet",
         "rows": [
           11,
-          31
+          18
         ],
         "timestamp_range": [
           0.733,
-          2.067
+          1.2
         ]
       },
       "evidence_frames": {
@@ -225,20 +236,7 @@
           15,
           16,
           17,
-          18,
-          19,
-          20,
-          21,
-          22,
-          23,
-          24,
-          25,
-          26,
-          27,
-          28,
-          29,
-          30,
-          31
+          18
         ]
       },
       "camera_evidence": [
@@ -251,7 +249,9 @@
         "observed": 1.0
       },
       "conflicts": [
-        "time_boundary_mismatch"
+        "boundary_refined_by_release",
+        "time_boundary_mismatch",
+        "weak_grasp_evidence"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
@@ -288,6 +288,11 @@
       "semantic_action": "candidate_object_grasp",
       "contact_state": "visible_contact",
       "motion_contact_cue": 0.454,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 0.0,
+        "pinch_median": 0.454
+      },
+      "end_time_original": null,
       "trajectory_reference": {
         "parquet": "demonstration.parquet",
         "rows": [
@@ -418,10 +423,16 @@
         "observed": 1.0
       },
       "conflicts": [
-        "primitive_visual_mismatch"
+        "object_continuity_question",
+        "primitive_visual_mismatch",
+        "weak_grasp_evidence"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "object_continuity_alt": [
+        "游戏手柄",
+        "电脑鼠标"
+      ],
       "bimanual_same_object": true,
       "possible_duplicate_of": []
     },
@@ -469,6 +480,11 @@
       "semantic_action": "candidate_object_grasp",
       "contact_state": "visible_contact",
       "motion_contact_cue": 0.309,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 68.0,
+        "pinch_median": 0.309
+      },
+      "end_time_original": null,
       "trajectory_reference": {
         "parquet": "demonstration.parquet",
         "rows": [
@@ -585,10 +601,15 @@
         "observed": 1.0
       },
       "conflicts": [
+        "object_continuity_question",
         "time_boundary_mismatch"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "object_continuity_alt": [
+        "手机",
+        "游戏手柄"
+      ],
       "bimanual_same_object": true,
       "possible_duplicate_of": []
     },
@@ -609,7 +630,7 @@
         "clip_0002_R_0"
       ],
       "start_time": 6.033,
-      "end_time": 10.733,
+      "end_time": 8.333,
       "visual_time_boundaries": [
         6.033,
         11.233
@@ -619,10 +640,10 @@
         10.733
       ],
       "start_frame": 91,
-      "end_frame": 160,
+      "end_frame": 124,
       "trajectory_rows": [
         91,
-        160
+        124
       ],
       "hand_side": "left",
       "object_category": "computer mouse",
@@ -638,15 +659,20 @@
       "semantic_action": "candidate_object_grasp",
       "contact_state": "visible_contact",
       "motion_contact_cue": 0.625,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 27.0,
+        "pinch_median": 0.625
+      },
+      "end_time_original": 10.733,
       "trajectory_reference": {
         "parquet": "demonstration.parquet",
         "rows": [
           91,
-          160
+          124
         ],
         "timestamp_range": [
           6.067,
-          10.667
+          8.267
         ]
       },
       "evidence_frames": {
@@ -724,43 +750,7 @@
           121,
           122,
           123,
-          124,
-          125,
-          126,
-          127,
-          128,
-          129,
-          130,
-          131,
-          132,
-          133,
-          134,
-          135,
-          136,
-          137,
-          138,
-          139,
-          140,
-          141,
-          142,
-          143,
-          144,
-          145,
-          146,
-          147,
-          148,
-          149,
-          150,
-          151,
-          152,
-          153,
-          154,
-          155,
-          156,
-          157,
-          158,
-          159,
-          160
+          124
         ]
       },
       "camera_evidence": [
@@ -773,10 +763,17 @@
         "observed": 1.0
       },
       "conflicts": [
-        "time_boundary_mismatch"
+        "boundary_refined_by_release",
+        "object_continuity_question",
+        "time_boundary_mismatch",
+        "weak_grasp_evidence"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "object_continuity_alt": [
+        "computer mouse",
+        "游戏手柄"
+      ],
       "bimanual_same_object": true,
       "possible_duplicate_of": []
     },
@@ -798,7 +795,7 @@
         "clip_0002_R_1"
       ],
       "start_time": 7.333,
-      "end_time": 10.733,
+      "end_time": 8.933,
       "visual_time_boundaries": [
         6.033,
         11.233
@@ -808,10 +805,10 @@
         10.733
       ],
       "start_frame": 110,
-      "end_frame": 160,
+      "end_frame": 133,
       "trajectory_rows": [
         110,
-        160
+        133
       ],
       "hand_side": "right",
       "object_category": "computer mouse",
@@ -828,15 +825,20 @@
       "semantic_action": "candidate_object_grasp",
       "contact_state": "visible_contact",
       "motion_contact_cue": 0.482,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 10.0,
+        "pinch_median": 0.482
+      },
+      "end_time_original": 10.733,
       "trajectory_reference": {
         "parquet": "demonstration.parquet",
         "rows": [
           110,
-          160
+          133
         ],
         "timestamp_range": [
           7.333,
-          10.667
+          8.867
         ]
       },
       "evidence_frames": {
@@ -904,34 +906,7 @@
           130,
           131,
           132,
-          133,
-          134,
-          135,
-          136,
-          137,
-          138,
-          139,
-          140,
-          141,
-          142,
-          143,
-          144,
-          145,
-          146,
-          147,
-          148,
-          149,
-          150,
-          151,
-          152,
-          153,
-          154,
-          155,
-          156,
-          157,
-          158,
-          159,
-          160
+          133
         ]
       },
       "camera_evidence": [
@@ -944,10 +919,17 @@
         "observed": 1.0
       },
       "conflicts": [
-        "time_boundary_mismatch"
+        "boundary_refined_by_release",
+        "object_continuity_question",
+        "time_boundary_mismatch",
+        "weak_grasp_evidence"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "object_continuity_alt": [
+        "computer mouse",
+        "游戏手柄"
+      ],
       "bimanual_same_object": true,
       "possible_duplicate_of": []
     },
@@ -992,6 +974,11 @@
       "semantic_action": "candidate_object_rotate",
       "contact_state": "no_contact",
       "motion_contact_cue": 0.918,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 0.0,
+        "pinch_median": 0.918
+      },
+      "end_time_original": null,
       "trajectory_reference": {
         "parquet": "demonstration.parquet",
         "rows": [
@@ -1056,10 +1043,16 @@
         "observed": 1.0
       },
       "conflicts": [
-        "time_boundary_mismatch"
+        "object_continuity_question",
+        "time_boundary_mismatch",
+        "weak_grasp_evidence"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "object_continuity_alt": [
+        "computer mouse",
+        "键盘"
+      ],
       "bimanual_same_object": true,
       "possible_duplicate_of": []
     },
@@ -1104,6 +1097,11 @@
       "semantic_action": "candidate_object_rotate",
       "contact_state": "no_contact",
       "motion_contact_cue": 1.063,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 0.0,
+        "pinch_median": 1.063
+      },
+      "end_time_original": null,
       "trajectory_reference": {
         "parquet": "demonstration.parquet",
         "rows": [
@@ -1167,10 +1165,16 @@
         "observed": 1.0
       },
       "conflicts": [
-        "time_boundary_mismatch"
+        "object_continuity_question",
+        "time_boundary_mismatch",
+        "weak_grasp_evidence"
       ],
       "needs_review": true,
       "verification_status": "pending_review",
+      "object_continuity_alt": [
+        "computer mouse",
+        "键盘"
+      ],
       "bimanual_same_object": true,
       "possible_duplicate_of": []
     }

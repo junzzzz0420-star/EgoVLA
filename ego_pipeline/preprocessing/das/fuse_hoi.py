@@ -42,6 +42,34 @@ def md5(p: Path) -> str:
     return hashlib.md5(p.read_bytes()).hexdigest()
 
 
+POSE_CN = {'OPEN': '张开', 'CLOSED': '收拢', 'PINCH': '捏合',
+           'HALF_OPEN': '半开', 'UNKNOWN': '未知'}
+INTER_CN = {'NO_INTERACTION': '无交互', 'APPROACH': '接近', 'GRASP': '抓取',
+            'HOLD': '持握', 'RELEASE': '释放'}
+
+
+def pose_state_series(demo, hand):
+    """逐帧手势姿态（与交互事件独立的通道）。证据不足 -> UNKNOWN。"""
+    ext = demo[[f'{hand}_ext_{f}' for f in
+                ('thumb', 'index', 'middle', 'ring', 'pinky')]].to_numpy(float)
+    ext_med = np.nanmedian(ext, axis=1)
+    pinch = demo[f'{hand}_pinch_idx'].to_numpy(float)
+    valid = demo[f'{hand}_status'].to_numpy() != 'invalid'
+    st = np.array(['UNKNOWN'] * len(demo), dtype=object)
+    for i in range(len(demo)):
+        if not valid[i] or not np.isfinite(ext_med[i]):
+            continue
+        if np.isfinite(pinch[i]) and pinch[i] < 0.35:
+            st[i] = 'PINCH'
+        elif ext_med[i] < 1.05:
+            st[i] = 'CLOSED'
+        elif ext_med[i] > 1.40:
+            st[i] = 'OPEN'
+        else:
+            st[i] = 'HALF_OPEN'
+    return st, ext_med
+
+
 def side_of_seg(seg_id: str) -> str:
     return {'L': 'left', 'R': 'right', 'B': 'both'}[seg_id[0]]
 
@@ -157,7 +185,26 @@ def build(sd: Path, out_dir: Path):
             conflicts.append('camera_disagreement')
 
         f0, f1 = frames_between(lo, hi)
+
+        # release 硬截断：事件内最后一个低 pinch 帧 +2 帧缓冲为持握终点；
+        # 抓握证据强度（pinch 是辅助证据，不能证明抓取）
+        pin_ev = demo[f'{hand}_pinch_idx'].iloc[f0:f1 + 1].to_numpy(float)
+        low = np.isfinite(pin_ev) & (pin_ev < 0.35)
+        grasp_ev = {'low_pinch_frame_pct': round(float(low.mean()) * 100, 0),
+                    'pinch_median': round(float(np.nanmedian(pin_ev)), 3)}
+        if grasp_ev['low_pinch_frame_pct'] < 30:
+            conflicts.append('weak_grasp_evidence')
+        end_refined, _end_orig = None, hi
+        if low.any():
+            cut_ts = float(ts[f0 + int(np.where(low)[0][-1])]) + 2 / 15.0
+            if cut_ts < hi - 0.3:
+                end_refined = round(cut_ts, 3)
+                conflicts.append('boundary_refined_by_release')
+                hi = end_refined
+                f0, f1 = frames_between(lo, hi)
         sts = demo[f'{hand}_status'].iloc[f0:f1 + 1]
+
+
         q = {k: round(float((sts == k).mean()), 3)
              for k in ('observed', 'interpolated', 'invalid') if (sts == k).any()}
         invalid_pct = float((sts == 'invalid').mean()) if len(sts) else 0.0
@@ -191,9 +238,10 @@ def build(sd: Path, out_dir: Path):
             'motion_primitives': prims,
             'semantic_action': sem,
             'contact_state': p['contact_state'],
-            'motion_contact_cue': round(float(np.nanmedian(
-                demo[f'{hand}_pinch_idx'].iloc[f0:f1 + 1])), 3)
-                if len(sts) else None,
+            'motion_contact_cue': grasp_ev['pinch_median'],
+            'grasp_evidence': grasp_ev,
+            'end_time_original': (round(float(_end_orig), 3)
+                                  if end_refined is not None else None),
             'trajectory_reference': {
                 'parquet': 'demonstration.parquet',
                 'rows': [f0, f1],
@@ -209,6 +257,20 @@ def build(sd: Path, out_dir: Path):
             'conflicts': sorted(set(conflicts)),
             'needs_review': bool(conflicts),
             'verification_status': 'pending_review'})
+
+    # ---- 跨片段物体连续性：同手相邻事件物体跳变（<5s 间隔）→ review
+    for hand in ('left', 'right'):
+        chain = sorted([e for e in events if e['hand_side'] == hand
+                        and e['object_category']],
+                       key=lambda e: e['start_time'])
+        for a, b in zip(chain, chain[1:]):
+            if (b['start_time'] - a['end_time']) < 5.0 \
+                    and a['object_category'] != b['object_category']:
+                names = {a['object_category'], b['object_category']}
+                b['conflicts'] = sorted(set(b['conflicts'] +
+                                            ['object_continuity_question']))
+                b.setdefault('object_continuity_alt', sorted(str(n) for n in names))
+                b['needs_review'] = True
 
     # ---- 双手同物体标记（同 clip 内时间重叠 + 同局部物体 id）
     for i, e in enumerate(events):
@@ -249,7 +311,8 @@ def build(sd: Path, out_dir: Path):
         e['event_id'] = f'hoi_{k:04d}'
         e['possible_duplicate_of'] = [x['event_id'] for x in e.get('possible_duplicate_of', [])]
 
-    # ---- 逐帧标签
+    # ---- 逐帧标签（姿态通道 + 交互状态机 + 展示标签，供渲染与审计同源使用）
+    poses = {h: pose_state_series(demo, h)[0] for h in ('left', 'right')}
     rows = {'frame_index': fi.tolist(), 'timestamp': ts.tolist()}
     for hand in ('left', 'right'):
         cols = {k: [] for k in ('event_ids', 'semantic_action', 'object_category',
@@ -267,6 +330,41 @@ def build(sd: Path, out_dir: Path):
         rows[f'{hand}_event_ids'] = cols['event_ids']
         rows.update({f'{hand}_{k}': v for k, v in cols.items() if k != 'event_ids'})
         rows[f'{hand}_status'] = demo[f'{hand}_status'].tolist()
+
+    # 交互状态机逐帧 + 展示标签（渲染器直接消费 display 列，保证一致）
+    for hand in ('left', 'right'):
+        inter = np.array(['NO_INTERACTION'] * len(ts), dtype=object)
+        for e in kept:
+            if e['hand_side'] != hand:
+                continue
+            r0, r1 = e['trajectory_rows']
+            r1 = min(r1 + 1, len(ts) - 1)
+            for r in range(r0, r1 + 1):
+                pin = demo[f'{hand}_pinch_idx'].iloc[r]
+                pose = poses[hand][r]
+                if pose == 'PINCH' and np.isfinite(pin) and pin < 0.35:
+                    inter[r] = 'GRASP'
+                elif r >= r1 - 2 and pose == 'OPEN':
+                    inter[r] = 'RELEASE'
+                else:
+                    inter[r] = 'HOLD'
+            for r in range(max(0, r0 - 8), r0):        # 事件前 0.5s 高速接近
+                sp = demo[f'{hand}_trans_speed'].iloc[r]
+                if np.isfinite(sp) and sp > 0.30:
+                    inter[r] = 'APPROACH'
+        disp = []
+        for r in range(len(ts)):
+            p, i = poses[hand][r], inter[r]
+            obj = ''
+            for e in kept:
+                if e['hand_side'] == hand and e['trajectory_rows'][0] <= r <= e['trajectory_rows'][1]:
+                    obj = str(e['object_category'])
+                    break
+            core = f'{INTER_CN[i]}' + (f' | {obj}' if obj and i in ('GRASP', 'HOLD') else '')
+            disp.append(f'{POSE_CN[p]} | {core}')
+        rows[f'{hand}_pose_state'] = poses[hand]
+        rows[f'{hand}_interaction_state'] = inter
+        rows[f'{hand}_display'] = disp
 
     out_dir.mkdir(parents=True, exist_ok=True)
     ann = {'meta': {'schema_version': SCHEMA_VERSION,

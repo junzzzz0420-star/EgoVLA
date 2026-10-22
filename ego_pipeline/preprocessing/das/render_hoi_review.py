@@ -107,7 +107,7 @@ def hand_lines(e):
     ]
 
 
-def render_clip(clip, events, demo, wrists, clips_dir, out_path, det,
+def render_clip(clip, events, demo, wrists, clips_dir, out_path, det, disp,
                 lang='cn', minimal=False, fps_hint=15.0):
     caps = {}
     for key, ref_key in (('L', 'left_video_ref'), ('R', 'right_video_ref')):
@@ -135,7 +135,7 @@ def render_clip(clip, events, demo, wrists, clips_dir, out_path, det,
          '-crf', '18', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', str(out_path)],
         stdin=subprocess.PIPE)
 
-    def tag_hand(img, mains):
+    def tag_hand(img, mains, disp_row):
         """检测本目画面的手，画红框 + 框旁当前语义文字（cls0=左 cls1=右）。"""
         if det is None or img is None:
             return
@@ -148,19 +148,15 @@ def render_clip(clip, events, demo, wrists, clips_dir, out_path, det,
             x0, y0, x1, y1 = map(int, b)
             cv2.rectangle(img, (x0, y0), (x1, y1), (0, 0, 255), 2)
             e = next((m for m in mains if m['hand_side'] == side), None)
+            review = e['needs_review'] if e else False
             if lang == 'cn':
                 hand_t = HAND_CN[side]
-                if e:
-                    sem = SEM_CN.get(e['semantic_action'], e['semantic_action'])
-                    label = f"{hand_t}: {sem} | {e['object_category']}" + \
-                            (" [待核验]" if e['needs_review'] else "")
-                else:
-                    label = f"{hand_t}: 无活跃事件"
+                label = f"{hand_t}: {disp_row[side]}" + (" [待核验]" if review else "")
                 fs = 17
             else:
                 label = (f"{side.upper()}: {e['semantic_action']} | {e['object_category']}"
-                         + (" [REVIEW]" if e['needs_review'] else "")
-                         ) if e else f"{side.upper()}: no active event"
+                         + (" [REVIEW]" if review else "")
+                         ) if e else f"{side.upper()}: no interaction"
                 fs = 15
             fnt = _cjk_font(fs) if lang == 'cn' else None
             if fnt:
@@ -173,9 +169,9 @@ def render_clip(clip, events, demo, wrists, clips_dir, out_path, det,
 
     def overlay(k, fL, fR):
         fR_ = fR if (fR is not None and fR.shape == fL.shape) else np.zeros_like(fL)
-        tag_hand(fL, mains_cur[0])
+        tag_hand(fL, mains_cur[0], disp_cur)
         if fR is not None:
-            tag_hand(fR, mains_cur[1])
+            tag_hand(fR, mains_cur[1], disp_cur)
         frame = np.concatenate([fL, fR_], axis=1)
         t = t0 + k / fps_hint
         row = min(int(np.searchsorted(ts, t)), len(ts) - 1)
@@ -228,6 +224,9 @@ def render_clip(clip, events, demo, wrists, clips_dir, out_path, det,
     k = 0
     while okL:
         t = t0 + k / fps_hint
+        r = min(int(np.searchsorted(disp['timestamp'].to_numpy(), t)), len(disp) - 1)
+        disp_cur = {'left': disp['left_display'].iloc[r],
+                    'right': disp['right_display'].iloc[r]}
         mains_cur = (events_at(ev, t)[0][:2], events_at(ev, t)[0][:2])
         probe.stdin.write(overlay(k, fL, fR).tobytes())
         k += 1
@@ -257,6 +256,8 @@ def main():
     ann = json.loads((sd / 'hoi_fusion/hoi_annotations.json').read_text())
     events = ann['events']
     clips_dir = sd / 'visual_context/clips'
+    # 展示标签与 hoi_fusion 同源（display 列），保证视频与 JSON 一致
+    disp = pd.read_parquet(sd / 'hoi_fusion/hoi_frame_labels.parquet')
     # 腕部世界坐标在 fused(_filled).parquet（demonstration 未含 transl 列）
     fused = next(p for p in (sd.parent / 'fused_filled.parquet',
                              sd.parent / 'fused.parquet') if p.exists())
@@ -276,7 +277,7 @@ def main():
     print(f'[render] 腕部轨迹源: {fused}')
     for clip in clips:
         p = render_clip(clip, events, demo, wrists, clips_dir,
-                        out_dir / f'{clip["clip_id"]}_review.mp4', det,
+                        out_dir / f'{clip["clip_id"]}_review.mp4', det, disp,
                         lang=args.lang, minimal=args.minimal)
         print(f'[render] {p}')
     print(f'[render] {len(clips)} 个审阅视频 -> {out_dir}')

@@ -3,7 +3,8 @@
     "event_id": "hoi_0000",
     "reasons": [
       "object_naming_mismatch",
-      "primitive_visual_mismatch"
+      "primitive_visual_mismatch",
+      "weak_grasp_evidence"
     ],
     "evidence": {
       "keyframes_dir": "visual_semantics/review",
@@ -27,13 +28,15 @@
   {
     "event_id": "hoi_0001",
     "reasons": [
-      "time_boundary_mismatch"
+      "boundary_refined_by_release",
+      "time_boundary_mismatch",
+      "weak_grasp_evidence"
     ],
     "evidence": {
       "keyframes_dir": "visual_semantics/review",
       "trajectory_rows": [
         11,
-        31
+        18
       ],
       "video_frames": [
         6,
@@ -51,7 +54,9 @@
   {
     "event_id": "hoi_0002",
     "reasons": [
-      "primitive_visual_mismatch"
+      "object_continuity_question",
+      "primitive_visual_mismatch",
+      "weak_grasp_evidence"
     ],
     "evidence": {
       "keyframes_dir": "visual_semantics/review",
@@ -82,6 +87,7 @@
   {
     "event_id": "hoi_0003",
     "reasons": [
+      "object_continuity_question",
       "time_boundary_mismatch"
     ],
     "evidence": {
@@ -113,13 +119,16 @@
   {
     "event_id": "hoi_0004",
     "reasons": [
-      "time_boundary_mismatch"
+      "boundary_refined_by_release",
+      "object_continuity_question",
+      "time_boundary_mismatch",
+      "weak_grasp_evidence"
     ],
     "evidence": {
       "keyframes_dir": "visual_semantics/review",
       "trajectory_rows": [
         91,
-        160
+        124
       ],
       "video_frames": [
         93,
@@ -146,13 +155,16 @@
   {
     "event_id": "hoi_0005",
     "reasons": [
-      "time_boundary_mismatch"
+      "boundary_refined_by_release",
+      "object_continuity_question",
+      "time_boundary_mismatch",
+      "weak_grasp_evidence"
     ],
     "evidence": {
       "keyframes_dir": "visual_semantics/review",
       "trajectory_rows": [
         110,
-        160
+        133
       ],
       "video_frames": [
         93,
@@ -179,7 +191,9 @@
   {
     "event_id": "hoi_0006",
     "reasons": [
-      "time_boundary_mismatch"
+      "object_continuity_question",
+      "time_boundary_mismatch",
+      "weak_grasp_evidence"
     ],
     "evidence": {
       "keyframes_dir": "visual_semantics/review",
@@ -201,7 +215,9 @@
   {
     "event_id": "hoi_0007",
     "reasons": [
-      "time_boundary_mismatch"
+      "object_continuity_question",
+      "time_boundary_mismatch",
+      "weak_grasp_evidence"
     ],
     "evidence": {
       "keyframes_dir": "visual_semantics/review",
