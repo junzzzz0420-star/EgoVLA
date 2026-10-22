@@ -63,7 +63,7 @@ def hand_lines(e):
     ]
 
 
-def render_clip(clip, events, demo, wrists, clips_dir, out_path, fps_hint=15.0):
+def render_clip(clip, events, demo, wrists, clips_dir, out_path, det, fps_hint=15.0):
     caps = {}
     for key, ref_key in (('L', 'left_video_ref'), ('R', 'right_video_ref')):
         ref = clip.get(ref_key)
@@ -90,8 +90,32 @@ def render_clip(clip, events, demo, wrists, clips_dir, out_path, fps_hint=15.0):
          '-crf', '18', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', str(out_path)],
         stdin=subprocess.PIPE)
 
+    def tag_hand(img, mains):
+        """检测本目画面的手，画红框 + 框旁当前语义文字（cls0=左 cls1=右）。"""
+        if det is None or img is None:
+            return
+        r = det.predict(img, verbose=False, conf=0.3, imgsz=640)[0]
+        if r.boxes is None or not len(r.boxes):
+            return
+        xy = r.boxes.xyxy.cpu().numpy(); cls = r.boxes.cls.cpu().numpy().astype(int)
+        for b, c in zip(xy, cls):
+            side = 'left' if c == 0 else 'right'
+            x0, y0, x1, y1 = map(int, b)
+            cv2.rectangle(img, (x0, y0), (x1, y1), (0, 0, 255), 2)
+            e = next((m for m in mains if m['hand_side'] == side), None)
+            label = (f"{side.upper()}: {e['semantic_action']} | "
+                     f"{e['object_category']}" + (" [REVIEW]" if e['needs_review'] else "")
+                     ) if e else f"{side.upper()}: no active event"
+            (tw, th), _ = cv2.getTextSize(label, FONT, 0.42, 1)
+            ty = y0 - 6 if y0 - th - 6 > 0 else y1 + th + 6
+            cv2.rectangle(img, (x0, ty - th - 4), (x0 + tw + 6, ty + 4), (0, 0, 0), -1)
+            cv2.putText(img, label, (x0 + 3, ty), FONT, 0.42, (0, 0, 255), 1, cv2.LINE_AA)
+
     def overlay(k, fL, fR):
         fR_ = fR if (fR is not None and fR.shape == fL.shape) else np.zeros_like(fL)
+        tag_hand(fL, mains_cur[0])
+        if fR is not None:
+            tag_hand(fR, mains_cur[1])
         frame = np.concatenate([fL, fR_], axis=1)
         t = t0 + k / fps_hint
         row = min(int(np.searchsorted(ts, t)), len(ts) - 1)
@@ -142,6 +166,8 @@ def render_clip(clip, events, demo, wrists, clips_dir, out_path, fps_hint=15.0):
 
     k = 0
     while okL:
+        t = t0 + k / fps_hint
+        mains_cur = (events_at(ev, t)[0][:2], events_at(ev, t)[0][:2])
         probe.stdin.write(overlay(k, fL, fR).tobytes())
         k += 1
         okL, fL = caps['L'].read()
@@ -173,10 +199,20 @@ def main():
     fdf = pd.read_parquet(fused)
     wrists = {s_: np.array([np.asarray(v, float) for v in fdf[f'{s_}_transl_world']])
               for s_ in ('left', 'right')}
+    repo = Path(__file__).resolve().parents[3]
+    det_path = repo / 'model/hawor/detector.pt'
+    det = None
+    if det_path.exists():
+        from ultralytics import YOLO
+        det = YOLO(str(det_path))
+        det.to('cpu')
+        print(f'[render] 手部检测器: {det_path} (cpu)')
+    else:
+        print('[render] 警告: 未找到 detector.pt，画面内不加手框')
     print(f'[render] 腕部轨迹源: {fused}')
     for clip in clips:
         p = render_clip(clip, events, demo, wrists, clips_dir,
-                        out_dir / f'{clip["clip_id"]}_review.mp4')
+                        out_dir / f'{clip["clip_id"]}_review.mp4', det)
         print(f'[render] {p}')
     print(f'[render] {len(clips)} 个审阅视频 -> {out_dir}')
 
