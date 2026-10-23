@@ -289,7 +289,7 @@ def main():
             x0, y0 = c * (vw + GAP), r * (vh + GAP)
             img = v['frames'][t].copy()
             if hoi_disp is not None:
-                tw = float(args.seg_start) + t / 15.0
+                tw = t / 15.0  # labels/grounding 的 frame_t 均为窗口相对时间(0起)，勿加 seg_start
                 row = hoi_disp.iloc[min(int(np.searchsorted(hoi_disp_ts, tw)), len(hoi_disp) - 1)]
                 Hf, Wf = img.shape[:2]
                 if hboxes is not None:
