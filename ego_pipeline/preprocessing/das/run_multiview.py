@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -60,7 +61,7 @@ def main():
     ap.add_argument('--audit-fill', action='store_true',
                     help='跑完后审计掉帧（qc 报告）并补 ≤3 帧小洞（fused_filled.parquet）')
     ap.add_argument('--hoi', action='store_true',
-                    help='生成 HOI 语义审阅视频（中文红框；含 Qwen2.5-VL 推理，约 2-3 分钟/片段）')
+                    help='在主 multiview 视频上叠加 HOI 中文红框语义（含 Qwen2.5-VL 推理，约 2-3 分钟/片段）')
     ap.add_argument('--vlm-open', action='store_true',
                     help='开放动作识别：VLM 自由描述各段+全窗任务；任务框为空时自动采用其任务概括')
     ap.add_argument('--skip-pipeline', action='store_true',
@@ -206,10 +207,13 @@ def main():
     ref_video = sorted((out / 'views' / ref).rglob('file-000.mp4'))[0]
     view_args = [f'{c}={sorted((out / "views" / c).rglob("file-000.mp4"))[0]},{parquets[c]}'
                  for c in cams]
+    # 同一次运行始终复用一个主视频目录；--hoi 完成后直接覆盖其中的
+    # multiview.mp4，避免同时留下未标注版和 +hoi 版两个主视频。
+    viz_dir = out / 'viz' / f'{args.mode}_{datetime.now():%Y%m%d_%H%M%S}'
     viz_args = [PY, HERE / 'viz_multiview.py', '--tag', args.mode,
                 '--views', *view_args, '--fused', fused,
                 '--export', export, '--seg-start', t0,
-                '--out-root', out / 'viz']
+                '--out-root', out / 'viz', '--out-dir', viz_dir]
     if act_json.exists():
         viz_args += ['--actions', act_json]
     if args.task:
@@ -235,7 +239,7 @@ def main():
              '--parquet', str(fused_path), str(filled), '--out-dir', out / 'qc'])
         print('[OK] 掉帧审计+补帧: ' + str(out / 'qc'), flush=True)
 
-    # 9) HOI 语义标注审阅视频（--hoi，中文红框 + 每手就近标注）
+    # 9) HOI 语义标注（--hoi）：直接叠加到主 multiview 视频，不另生成复核视频
     if args.hoi and fused_path.exists():
         src = filled if (args.audit_fill and filled.exists()) else fused_path
         sd = src.parent / 'structured'
@@ -247,19 +251,18 @@ def main():
         run([PY, HERE / 'ground_objects.py', '--structured-dir', sd,
              '--export', export], cwd=HERE)   # 红框与关联证据源头（缺它链上全无框）
         run([PY, HERE / 'fuse_hoi.py', '--structured-dir', sd])
-        run([PY, HERE / 'render_hoi_review.py', '--structured-dir', sd,
-             '--lang', 'cn', '--minimal'])
         # 主视频叠加中文红框语义：重跑 viz（新时间戳目录，界面自动播放最新）
         hoi_viz_args = [PY, HERE / 'viz_multiview.py', '--tag', args.mode + '+hoi',
                         '--views', *view_args, '--fused', fused,
                         '--export', export, '--seg-start', t0,
-                        '--out-root', out / 'viz',
+                        '--out-root', out / 'viz', '--out-dir', viz_dir,
                         '--hoi-labels', sd / 'hoi_fusion/hoi_frame_labels.parquet',
                         '--hand-boxes', sd / 'grounding/hand_boxes.parquet']
         if args.task:
             hoi_viz_args += ['--task-label', args.task]
         run(hoi_viz_args)
-        print(f'[OK] HOI 审阅视频(中文红框): {sd}/hoi_fusion/review_videos/', flush=True)
+        print(f'[OK] 主运行视频已叠加中文红框语义: {out}/viz/{args.mode}+hoi_*/multiview.mp4',
+              flush=True)
 
     print(f'\n[OK] 成品: {out}/viz/{args.mode}_<时间戳>/multiview.mp4 + {out}/pi05')
 

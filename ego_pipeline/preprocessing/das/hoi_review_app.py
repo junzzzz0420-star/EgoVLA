@@ -33,6 +33,8 @@ SEM_CN = {'candidate_object_grasp': '抓取(候选)', 'candidate_object_transpor
           'candidate_release': '释放(候选)', 'candidate_lift': '提起(候选)',
           'gesture': '手势', 'keyboard_touch_candidate': '键盘触碰(候选)',
           'hand_rotation_no_object_evidence': '手部旋转(无物体证据)',
+          'pick_up_phone': '拿起手机', 'hold_phone': '持握手机',
+          'put_down_phone': '放下手机',
           'unknown_action': '未知动作', 'no_interaction': '无交互',
           'needs_semantic_review': '语义待复核'}
 CONTACT_CN = {'visible_contact': '可见接触', 'probable_contact': '可能接触',

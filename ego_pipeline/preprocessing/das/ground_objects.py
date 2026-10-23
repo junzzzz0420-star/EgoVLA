@@ -43,7 +43,8 @@ ALIAS = {'鼠标': 'mouse', '电脑鼠标': 'mouse', 'computer mouse': 'mouse', 
 
 
 def norm_alias(name: str | None):
-    return ALIAS.get((name or '').strip().lower(), None)
+    value = (name or '').strip().lower()
+    return ALIAS.get(value, value if value in COCO_KEEP else None)
 
 
 def crop_offset(video_name: str) -> float:
@@ -53,12 +54,22 @@ def crop_offset(video_name: str) -> float:
 
 def detect_camera(video_hd: Path, camera_id: str, hand_model, obj_model,
                   t0: float, t1: float, stride: int = 2):
-    """在 HD 帧上检测手与物体（30fps 每 stride 帧取一）。返回两个行列表。"""
+    """在 HD 帧上检测手与物体（30fps 每 stride 帧取一）。
+
+    手机常被手遮挡，整帧 COCO 检测很容易漏掉；当整帧没有手机结果时，
+    再对手周围的放大区域做一次低阈值手机检测。这个回退只增加候选证据，
+    最终仍由时序融合和人工复核决定是否是真实交互。
+    """
     import cv2
     cap = cv2.VideoCapture(str(video_hd))
     fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
     n = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     hands, objs = [], []
+    names = obj_model.names
+    if isinstance(names, list):
+        names = dict(enumerate(names))
+    phone_idx = next((i for i, name in names.items() if name == 'cell phone'), None)
+    hand_crop_ids = {0: -100001, 1: -100002}
     for fi in range(0, n, stride):
         cap.set(cv2.CAP_PROP_POS_FRAMES, fi)
         ok, frame = cap.read()
@@ -69,10 +80,12 @@ def detect_camera(video_hd: Path, camera_id: str, hand_model, obj_model,
         if t < t0 - 0.2 or t > t1 + 0.2:
             continue
         rh = hand_model.predict(frame, verbose=False, conf=0.3, imgsz=640)[0]
+        hand_boxes = []
         if rh.boxes is not None and len(rh.boxes):
             for b, c, cf in zip(rh.boxes.xyxy.cpu().numpy(),
                                 rh.boxes.cls.cpu().numpy().astype(int),
                                 rh.boxes.conf.cpu().numpy()):
+                hand_boxes.append((b, c))
                 hands.append({'camera': camera_id,
                               'hand': 'left' if c == 0 else 'right',
                               'frame_t': round(t, 3), 'hd_frame': fi,
@@ -81,21 +94,50 @@ def detect_camera(video_hd: Path, camera_id: str, hand_model, obj_model,
                               'conf': round(float(cf), 3)})
         ro = obj_model.track(frame, persist=True, verbose=False, conf=0.22,
                              imgsz=800, classes=[i for i, n in
-                                                 obj_model.names.items()
+                                                 names.items()
                                                  if n in COCO_KEEP])[0]
+        has_phone = False
         if ro.boxes is not None and len(ro.boxes):
             ids = ro.boxes.id.int().cpu().numpy() if ro.boxes.id is not None \
                 else [-1] * len(ro.boxes)
             for b, c, tid, cf in zip(ro.boxes.xyxy.cpu().numpy(),
                                      ro.boxes.cls.cpu().numpy().astype(int),
                                      ids, ro.boxes.conf.cpu().numpy()):
+                has_phone = has_phone or c == phone_idx
                 objs.append({'camera': camera_id,
-                             'cls': obj_model.names[c],
+                             'cls': names[c],
                              'track_id': int(tid), 'frame_t': round(t, 3),
                              'hd_frame': fi,
                              'x0': b[0] / W, 'y0': b[1] / H,
                              'x1': b[2] / W, 'y1': b[3] / H,
                              'conf': round(float(cf), 3)})
+
+        # Hand-centered phone fallback. Use one stable synthetic id per
+        # camera/hand side; downstream fusion relies on event-local distance
+        # and overlap rows and does not treat this as verified tracking.
+        if phone_idx is not None and not has_phone:
+            for hb, hand_cls in hand_boxes:
+                x0, y0, x1, y1 = hb
+                hw, hh = max(1.0, x1 - x0), max(1.0, y1 - y0)
+                pad_x, pad_y = 1.25 * hw, 1.25 * hh
+                xa, ya = max(0, int(x0 - pad_x)), max(0, int(y0 - pad_y))
+                xb, yb = min(W, int(x1 + pad_x)), min(H, int(y1 + pad_y))
+                crop = frame[ya:yb, xa:xb]
+                if crop.size == 0 or crop.shape[0] < 64 or crop.shape[1] < 64:
+                    continue
+                rp = obj_model.predict(crop, verbose=False, conf=0.12,
+                                       imgsz=1024, classes=[phone_idx])[0]
+                if rp.boxes is None or not len(rp.boxes):
+                    continue
+                for pb, pcf in zip(rp.boxes.xyxy.cpu().numpy(),
+                                   rp.boxes.conf.cpu().numpy()):
+                    objs.append({
+                        'camera': camera_id, 'cls': 'cell phone',
+                        'track_id': hand_crop_ids.get(int(hand_cls), -100009),
+                        'frame_t': round(t, 3), 'hd_frame': fi,
+                        'x0': (pb[0] + xa) / W, 'y0': (pb[1] + ya) / H,
+                        'x1': (pb[2] + xa) / W, 'y1': (pb[3] + ya) / H,
+                        'conf': round(float(pcf), 3), 'source': 'hand_crop'})
     cap.release()
     return hands, objs
 

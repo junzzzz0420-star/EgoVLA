@@ -46,6 +46,15 @@ POSE_CN = {'OPEN': '张开', 'CLOSED': '收拢', 'PINCH': '捏合',
            'HALF_OPEN': '半开', 'UNKNOWN': '未知'}
 INTER_CN = {'NO_INTERACTION': '无交互', 'APPROACH': '接近', 'GRASP': '抓取',
             'HOLD': '持握', 'RELEASE': '释放'}
+OBJECT_CN = {'cell phone': '手机', 'mouse': '鼠标', 'keyboard': '键盘',
+             'remote': '手柄', 'book': '书', 'cup': '杯子',
+             'scissors': '剪刀', 'laptop': '笔记本电脑'}
+PHONE_ALIASES = {'cell phone', 'phone', 'mobile phone', 'smartphone', 'cellphone', '手机'}
+INTERACTION_CN = {
+    'pick_up_phone': '拿起手机',
+    'hold_phone': '持握手机',
+    'put_down_phone': '放下手机',
+}
 
 
 def pose_state_series(demo, hand):
@@ -67,6 +76,17 @@ def pose_state_series(demo, hand):
             st[i] = 'OPEN'
         else:
             st[i] = 'HALF_OPEN'
+    # 15 fps pose estimates can flicker for one frame around a threshold.
+    # Apply a small majority filter without filling invalid frames or changing
+    # the underlying numeric evidence used by the interaction rules.
+    raw = st.copy()
+    for i in range(1, len(st) - 1):
+        if raw[i] == 'UNKNOWN':
+            continue
+        win = [x for x in raw[i - 1:i + 2] if x != 'UNKNOWN']
+        if len(win) >= 2:
+            vals, counts = np.unique(win, return_counts=True)
+            st[i] = vals[int(np.argmax(counts))]
     return st, ext_med
 
 
@@ -96,9 +116,11 @@ def ground_events(events, sd: Path):
             ev[cls] = {'n': int(len(gg)),
                        'dist_median': round(float(gg.dist.median()), 3),
                        'iou_median': round(float(gg.iou.median()), 3),
-                       'near_ratio': round(float(
-                           (gg.near_frames / (gg.near_frames.max() + 1e-6)
-                            if False else gg.near_frames / 30.0).clip(upper=1.0).mean()), 3),
+                       # Only count evidence rows inside this event.  The old
+                       # track-wide near_frames value was repeated on every row
+                       # and was unreliable for short, occluded interactions.
+                       'near_ratio': round(float((gg.dist < 1.0).mean()), 3),
+                       'overlap_ratio': round(float((gg.iou > 0.05).mean()), 3),
                        'corr_median': (round(float(gg.move_corr.median()), 3)
                                        if gg.move_corr.notna().any() else None)}
         passed = [c for c, v in ev.items()
@@ -108,6 +130,13 @@ def ground_events(events, sd: Path):
         e['grounding'] = {'per_class': ev,
                           'environment_classes_excluded': sorted(big)}
         vlm = e['object_category']
+        if isinstance(vlm, str):
+            vlm = vlm.strip().lower()
+            vlm = {'手机': 'cell phone', 'phone': 'cell phone',
+                   'mobile phone': 'cell phone', 'smartphone': 'cell phone',
+                   'cellphone': 'cell phone', 'computer mouse': 'mouse',
+                   'computer keyboard': 'keyboard'}.get(vlm, vlm)
+            e['object_category'] = vlm
         if len(passed) == 1:
             e['object_detected'] = passed[0]
             e['object_resolution'] = 'resolved'
@@ -121,8 +150,9 @@ def ground_events(events, sd: Path):
             e['object_detected'] = None
             e['object_resolution'] = 'vlm_detector_mismatch'
             e['object_vlm_claim'] = vlm               # v2: VLM 降级为候选
+            e['object_candidate'] = vlm
             e['object_category'] = None
-            e['object_source'] = 'unknown'
+            e['object_source'] = 'vlm_candidate'
             e['conflicts'] = sorted(set(e['conflicts'] +
                                         ['object_vlm_detector_mismatch']))
             e['needs_review'] = True
@@ -130,8 +160,9 @@ def ground_events(events, sd: Path):
             e['object_detected'] = None
             e['object_resolution'] = 'no_object_near_hand'
             e['object_vlm_claim'] = vlm
+            e['object_candidate'] = vlm
             e['object_category'] = None
-            e['object_source'] = 'unknown'
+            e['object_source'] = 'vlm_candidate'
             e['conflicts'] = sorted(set(e['conflicts'] + ['no_object_near_hand']))
             e['needs_review'] = True
         if vlm and e.get('object_category') != vlm and 'object_vlm_claim' not in e:
@@ -144,6 +175,55 @@ def ground_events(events, sd: Path):
             e['semantic_action_before_grounding'] = e.get(
                 'semantic_action_before_grounding', e['semantic_action'])
     return events, big
+
+
+def refine_interaction_events(events):
+    """把物体候选 + 动作/原语组合成可解释的交互事件。
+
+    ``semantic_action`` 仍保留原有候选语义；对手机额外写入
+    ``interaction_action``，这样检测器漏检但 VLM 提供手机候选时也能显示
+    “拿起手机（候选）”，而不是把物体信息静默丢掉。
+    """
+    for e in events:
+        obj = e.get('object_detected') or e.get('object_category') \
+            or e.get('object_vlm_claim') or e.get('object_candidate')
+        if not isinstance(obj, str):
+            continue
+        obj = obj.strip().lower()
+        obj = {'手机': 'cell phone', 'phone': 'cell phone',
+               'mobile phone': 'cell phone', 'smartphone': 'cell phone',
+               'cellphone': 'cell phone', 'computer mouse': 'mouse',
+               'computer keyboard': 'keyboard'}.get(obj, obj)
+        e['object_candidate'] = obj
+        if obj not in PHONE_ALIASES:
+            continue
+
+        prims = set(e.get('motion_primitives') or ())
+        va = e.get('visual_action')
+        if va == 'release' or 'release' in prims:
+            action = 'put_down_phone'
+        elif va == 'lift' or 'lift' in prims:
+            action = 'pick_up_phone'
+        elif va in ('transport', 'hold') or {'transport', 'hold'} & prims:
+            action = 'hold_phone'
+        elif va == 'grasp' or {'pinch', 'power_grasp'} & prims:
+            action = 'pick_up_phone'
+        else:
+            continue
+
+        e['interaction_object'] = 'cell phone'
+        e['interaction_action'] = action
+        e['interaction_action_cn'] = INTERACTION_CN[action]
+        e['semantic_action_before_interaction'] = e.get('semantic_action')
+        e['semantic_action'] = action
+        if e.get('object_source') == 'vlm_candidate':
+            e['interaction_status'] = 'candidate'
+            e['needs_review'] = True
+            e['conflicts'] = sorted(set(e.get('conflicts', []) +
+                                        ['phone_detector_missing']))
+        else:
+            e['interaction_status'] = 'grounded'
+    return events
 
 
 COCO_BIG_AREA = {'laptop', 'tv'}
@@ -167,6 +247,10 @@ def fuse_semantics(va: str, contact: str, obj, prims: list[str]) -> tuple[str, l
         sem = 'candidate_object_transport'
         if 'transport' not in prims:
             c.append('primitive_visual_mismatch')
+    elif va == 'hold':
+        sem = 'candidate_object_hold'
+        if not ({'hold', 'transport', 'pinch', 'power_grasp'} & set(prims)):
+            c.append('weak_hold_evidence')
     elif va == 'rotate':
         sem = 'candidate_object_rotate' if obj else 'hand_rotation_no_object_evidence'
         if 'rotate' not in prims:
@@ -339,6 +423,8 @@ def build(sd: Path, out_dir: Path, decisions: list | None = None):
 
     # ---- grounding 物体仲裁（Step 2.5）
     events, _big = ground_events(events, sd)
+    # ---- 交互事件语义：物体候选 + 手势/运动原语 + 释放时序
+    events = refine_interaction_events(events)
 
     # ---- 跨片段物体连续性：同手相邻事件物体跳变（<5s 间隔）→ review
     for hand in ('left', 'right'):
@@ -459,11 +545,20 @@ def build(sd: Path, out_dir: Path, decisions: list | None = None):
                 continue
             r0, r1 = e['trajectory_rows']
             r1 = min(r1 + 1, len(ts) - 1)
+            object_evidence = (e.get('object_detected') or e.get('object_category')
+                               or e.get('object_vlm_claim') or e.get('object_candidate'))
+            contact_evidence = e.get('contact_state') in ('visible_contact',
+                                                            'probable_contact')
             for r in range(r0, r1 + 1):
                 pin = demo[f'{hand}_pinch_idx'].iloc[r]
                 pose = poses[hand][r]
-                if pose == 'PINCH' and np.isfinite(pin) and pin < 0.35:
+                if (pose == 'PINCH' and np.isfinite(pin) and pin < 0.35
+                        and (contact_evidence or object_evidence)):
                     inter[r] = 'GRASP'
+                elif pose == 'PINCH' and np.isfinite(pin) and pin < 0.35:
+                    # A pinch is a gesture by itself; do not call it a grasp
+                    # when no object/contact evidence exists.
+                    inter[r] = 'NO_INTERACTION'
                 elif r >= r1 - 2 and pose == 'OPEN':
                     inter[r] = 'RELEASE'
                 else:
@@ -476,15 +571,31 @@ def build(sd: Path, out_dir: Path, decisions: list | None = None):
         for r in range(len(ts)):
             p, i = poses[hand][r], inter[r]
             obj = ''
+            interaction = None
             for e in kept:
                 if e['hand_side'] == hand and e['trajectory_rows'][0] <= r <= e['trajectory_rows'][1]:
-                    obj = str(e.get('object_detected') or e['object_category'])
+                    obj = str(e.get('object_detected') or e.get('object_category')
+                              or e.get('object_vlm_claim') or e.get('object_candidate') or '')
+                    interaction = e.get('interaction_action')
                     break
+            obj = OBJECT_CN.get(obj.lower(), obj)
             obj_ok = obj not in ('', 'None', 'nan', 'unknown_action', '无交互')
-            core = f'{INTER_CN[i]}' + (f' | {obj}' if obj and obj_ok
-                                       and i in ('GRASP', 'HOLD') else '')
+            if interaction:
+                core = INTERACTION_CN[interaction]
+                if any(e.get('interaction_action') == interaction
+                       and e.get('interaction_status') == 'candidate'
+                       and e['hand_side'] == hand
+                       and e['trajectory_rows'][0] <= r <= e['trajectory_rows'][1]
+                       for e in kept):
+                    core += '（候选）'
+            else:
+                core = f'{INTER_CN[i]}' + (f' | {obj}' if obj and obj_ok
+                                           and i in ('GRASP', 'HOLD') else '')
             disp.append(f'{POSE_CN[p]} | {core}')
         rows[f'{hand}_pose_state'] = poses[hand]
+        # Explicit gesture channel: kept separate from interaction_state so a
+        # pinch without an object remains a gesture rather than a false grasp.
+        rows[f'{hand}_gesture_state'] = poses[hand]
         rows[f'{hand}_interaction_state'] = inter
         rows[f'{hand}_display'] = disp
 

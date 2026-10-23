@@ -170,6 +170,8 @@ def main():
     ap.add_argument('--export', required=True, help='das_export/<rec>（IMU）')
     ap.add_argument('--seg-start', type=float, required=True)
     ap.add_argument('--out-root', default='examples/das_compare')
+    ap.add_argument('--out-dir', default=None,
+                    help='固定输出目录；指定后不再按 tag/时间戳新建目录')
     ap.add_argument('--tag', default='run')
     ap.add_argument('--hoi-labels', default=None,
                     help='hoi_frame_labels.parquet：输入面板叠加中文红框语义标注')
@@ -271,7 +273,8 @@ def main():
         hboxes = pd.read_parquet(hb) if hb and Path(hb).exists() else None
         from render_hoi_review import put_text as _pt
 
-    out_dir = Path(args.out_root) / f"{args.tag}_{datetime.now():%Y%m%d_%H%M%S}"
+    out_dir = (Path(args.out_dir) if args.out_dir else
+               Path(args.out_root) / f"{args.tag}_{datetime.now():%Y%m%d_%H%M%S}")
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f'[viz] {len(names)} 输入 + 世界3D'
           f'{" + 动作语义条" if acts is not None else ""}, {N} 帧 → {out_dir}')

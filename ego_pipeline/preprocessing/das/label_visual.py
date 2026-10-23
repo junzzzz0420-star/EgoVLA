@@ -44,10 +44,21 @@ MODEL_ID = 'Qwen/Qwen2.5-VL-7B-Instruct-AWQ'
 KF_NAMES = ('before', 'at_start', 'peak', 'at_end')
 ENUMS = {
     'hand_side': {'left', 'right', 'both', 'unknown'},
-    'visual_action': {'approach', 'grasp', 'lift', 'transport', 'rotate',
+    'visual_action': {'approach', 'grasp', 'lift', 'transport', 'hold', 'rotate',
                       'release', 'gesture', 'unknown'},
     'contact_state': {'visible_contact', 'probable_contact', 'no_contact',
                       'unknown'},
+}
+
+# Keep the VLM's open vocabulary, but canonicalize common names before the
+# cross-camera fusion stage. The detector uses the COCO name ``cell phone``
+# while the VLM often returns 手机/phone/smartphone.
+OBJECT_ALIASES = {
+    '手机': 'cell phone', 'phone': 'cell phone', 'mobile phone': 'cell phone',
+    'smartphone': 'cell phone', 'cellphone': 'cell phone',
+    '鼠标': 'mouse', 'computer mouse': 'mouse',
+    '键盘': 'keyboard', 'computer keyboard': 'keyboard',
+    '手柄': 'remote', '游戏手柄': 'remote', 'gamepad': 'remote',
 }
 
 
@@ -65,7 +76,7 @@ def build_prompt(camera_tag: str, duration_s: float, prim_l, prim_r) -> str:
     {{
       "hand_side": "left|right|both|unknown",
       "object_category": "看到的实际物体类别(开放词表,中文或英文)",
-      "visual_action": "approach|grasp|lift|transport|rotate|release|gesture|unknown",
+      "visual_action": "approach|grasp|lift|transport|hold|rotate|release|gesture|unknown",
       "contact_state": "visible_contact|probable_contact|no_contact|unknown",
       "action_description": "一句话中文描述这只手在做什么",
       "time_estimate": {{"start_s": 数值或null, "end_s": 数值或null}}
@@ -77,6 +88,7 @@ def build_prompt(camera_tag: str, duration_s: float, prim_l, prim_r) -> str:
 2. 看不清/无法确认物体时 object_category 必须为 null，禁止根据常识猜测；
 3. time_estimate 是相对本视频起点(0秒)的估计，不确定就填 null；
 4. contact_state 表示视觉证据强度：visible_contact=明确看到手指接触物体；
+   如果手已经持续握住/携带物体，visual_action 使用 hold；不要把持续握持都写成 grasp；
 5. action_description 限 30 字以内；没有手的帧不要编造 hands 条目。"""
 
 
@@ -229,12 +241,15 @@ def sample_frames(video: Path, clip: dict, video_fps: float, grab, base: int):
 
 
 def _norm_obj(v):
-    """模型把 null 写成字符串等情形归一化为 JSON null（不编造类别）。"""
+    """归一化 null 和常见中英文别名，不凭常识补写未知物体。"""
     if v is None:
         return None
-    if isinstance(v, str) and v.strip().lower() in ('null', 'none', '无', 'unknown', 'n/a', ''):
+    if not isinstance(v, str):
+        return v
+    name = v.strip()
+    if name.lower() in ('null', 'none', '无', 'unknown', 'n/a', ''):
         return None
-    return v
+    return OBJECT_ALIASES.get(name.lower(), OBJECT_ALIASES.get(name, name))
 
 
 def crop_offset_of(video_ref: Path) -> float:

@@ -81,23 +81,6 @@ def list_videos() -> list[tuple[str, str]]:
     return out
 
 
-_rev = {'proc': None, 'url': None}
-
-
-def _launch_review(out_dir, export):
-    """为本次运行拉起人工复核界面（端口 7864，已运行则复用）。"""
-    if _rev['proc'] is not None and _rev['proc'].poll() is None:
-        return _rev['url']
-    import subprocess as _sp
-    _rev['proc'] = _sp.Popen(
-        [str(PY), str(HERE / 'hoi_review_app.py'),
-         '--structured-dir', str(out_dir / 'structured'),
-         '--export', str(export), '--port', '7864'],
-        cwd=str(REPO), stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
-    _rev['url'] = 'http://localhost:7864'
-    return _rev['url']
-
-
 def _watch(proc, out_dir, mode):
     video = None
     for _ in range(60 * 60 * 4):               # 最多 4h
@@ -107,10 +90,6 @@ def _watch(proc, out_dir, mode):
     # 找该模式最新时间戳目录里的视频
     cands = sorted((out_dir / 'viz').glob(f'{mode}*/multiview.mp4'),
                    key=lambda p: ('+hoi' not in str(p), str(p)))  # 匹配含+hoi版且优先
-    review = sorted((out_dir / 'structured/hoi_fusion/review_videos').glob('*_review.mp4'))
-    if review:
-        _job['videos'] = [str(p) for p in review]
-        _job['review_url'] = _launch_review(out_dir, _job.get('last_export') or out_dir)
     if cands:
         video = str(cands[-1])
     with _lock:
@@ -168,7 +147,7 @@ def index():
   时长(秒) <input type="number" id="dur" value="5" step="0.5" min="1" max="60" style="width:90px"></div>
  <div class="row"><button id="run" onclick="run()">运行</button>
   <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="audit_fill" checked> 掉帧检查+补帧</label>
-  <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="hoi" checked> 语义标注视频(中文红框,含大模型约+3分钟)</label>
+  <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="hoi" checked> 主视频叠加中文红框语义(约+3分钟)</label>
   <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="vlm"> 大模型复核动作</label>
   <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="vlm_open"> 开放动作识别(自动任务描述)</label>
   <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="autoscroll" checked> 日志自动滚动</label></div>
@@ -180,7 +159,9 @@ def index():
 <div class="right">
  <div id="errmsg"></div>
  <pre id="log">等待运行…</pre>
+ <div class="lbl" style="margin-top:10px">主运行视频（手部建模 + 红色文字/红框语义注释）</div>
  <video id="vid" controls style="display:none"></video>
+ <div id="main-result" style="display:none;margin-top:8px;font-size:12px;color:#8fa3b5"></div>
 </div>
 </div></div><script>
 let mode='rig6';
@@ -233,10 +214,9 @@ async function poll(){{
  else em.style.display='none';
  if(!j.done){{setTimeout(poll,2000);return;}}
  document.getElementById('run').disabled=false;
- if(j.video){{const v=document.getElementById('vid');v.src='/video?p='+encodeURIComponent(j.video);v.style.display='block';}}
- if(j.videos&&j.videos.length){{const d=document.getElementById('rv');d.style.display='block';
-   d.innerHTML='<b>语义标注视频(中文红框):</b><br>'+j.videos.map((p,i)=>`<video controls width="640" src="/video?p=${{encodeURIComponent(p)}}"></video>`).join('<br>');}}}}
- if(j.review_url){{document.getElementById('rvlink').style.display='inline';document.getElementById('rvlink').href=j.review_url;}}
+ if(j.video){{const v=document.getElementById('vid');v.src='/video?p='+encodeURIComponent(j.video);v.style.display='block';
+   const r=document.getElementById('main-result');r.style.display='block';r.textContent='主运行视频已保存：'+j.video;}}
+ }}
 </script></body></html>'''
 
 
@@ -320,8 +300,6 @@ def api_run():
 def api_status():
     with _lock:
         return jsonify(done=_job['done'], video=_job['video'],
-                       videos=_job.get('videos'),
-                       review_url=_job.get('review_url'),
                        error=_job['error'], log='\n'.join(_job['log'][-3000:]))
 
 
