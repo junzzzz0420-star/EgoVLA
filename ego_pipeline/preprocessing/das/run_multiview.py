@@ -244,6 +244,8 @@ def main():
              '--rig-input', rig_in])
         run([PY, HERE / 'label_visual.py',
              '--visual-context', sd / 'visual_context', '--export', export], cwd=HERE)
+        run([PY, HERE / 'ground_objects.py', '--structured-dir', sd,
+             '--export', export], cwd=HERE)   # 红框与关联证据源头（缺它链上全无框）
         run([PY, HERE / 'fuse_hoi.py', '--structured-dir', sd])
         run([PY, HERE / 'render_hoi_review.py', '--structured-dir', sd,
              '--lang', 'cn', '--minimal'])

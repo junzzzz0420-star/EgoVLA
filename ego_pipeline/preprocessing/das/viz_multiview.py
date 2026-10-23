@@ -297,8 +297,10 @@ def main():
                         p1 = (int(hb_.x0 * Wf), int(hb_.y0 * Hf))
                         p2 = (int(hb_.x1 * Wf), int(hb_.y1 * Hf))
                         cv2.rectangle(img, p1, p2, (0, 0, 255), 2)
-                        lab = f"{'左手' if hb_.hand == 'left' else '右手'}: {row[f'{hb_.hand}_display']}"
-                        _pt(img, lab, (max(2, p1[0]), max(18, p1[1] - 8)), (0, 0, 255), 17, 'cn')
+                # 每手语义标签固定显示（不依赖该帧是否检出框）
+                for hi, hand in enumerate(('left', 'right')):
+                    lab = f"{'左手' if hand == 'left' else '右手'}: {row[f'{hand}_display']}"
+                    _pt(img, lab, (6, 24 + hi * 26), (0, 0, 255), 17, 'cn')
             st = v['st']
             _draw_ee_overlay(img, st['state'][t, :3], st['state'][t, 3:6],
                              st['state'][t, 6], bool(st['valid'][t, 0]),
