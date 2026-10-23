@@ -254,8 +254,6 @@ def main():
                         '--out-root', out / 'viz',
                         '--hoi-labels', sd / 'hoi_fusion/hoi_frame_labels.parquet',
                         '--hand-boxes', sd / 'grounding/hand_boxes.parquet']
-        if act_json.exists():
-            hoi_viz_args += ['--actions', act_json]
         if args.task:
             hoi_viz_args += ['--task-label', args.task]
         run(hoi_viz_args)

@@ -314,7 +314,7 @@ def main():
         world = _draw_3d(world_h, world_w, state_w[:N], recon_w, action_w, valid_w, t)
         y1 = top_h + GAP + (strip_h + GAP if acts is not None else 0)
         canvas[y1:y1 + world_h, 0:world_w] = world
-        if acts is not None:
+        if acts is not None and hoi_disp is None:
             draw_semantic_strip(canvas, top_h + GAP, strip_h, canvas_w, t, N,
                                 acts, args.task_label, fonts)
         imu = imu_row(t)
