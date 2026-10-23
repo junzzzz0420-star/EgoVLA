@@ -247,6 +247,18 @@ def main():
         run([PY, HERE / 'fuse_hoi.py', '--structured-dir', sd])
         run([PY, HERE / 'render_hoi_review.py', '--structured-dir', sd,
              '--lang', 'cn', '--minimal'])
+        # 主视频叠加中文红框语义：重跑 viz（新时间戳目录，界面自动播放最新）
+        hoi_viz_args = [PY, HERE / 'viz_multiview.py', '--tag', args.mode + '+hoi',
+                        '--views', *view_args, '--fused', fused,
+                        '--export', export, '--seg-start', t0,
+                        '--out-root', out / 'viz',
+                        '--hoi-labels', sd / 'hoi_fusion/hoi_frame_labels.parquet',
+                        '--hand-boxes', sd / 'grounding/hand_boxes.parquet']
+        if act_json.exists():
+            hoi_viz_args += ['--actions', act_json]
+        if args.task:
+            hoi_viz_args += ['--task-label', args.task]
+        run(hoi_viz_args)
         print(f'[OK] HOI 审阅视频(中文红框): {sd}/hoi_fusion/review_videos/', flush=True)
 
     print(f'\n[OK] 成品: {out}/viz/{args.mode}_<时间戳>/multiview.mp4 + {out}/pi05')

@@ -171,6 +171,10 @@ def main():
     ap.add_argument('--seg-start', type=float, required=True)
     ap.add_argument('--out-root', default='examples/das_compare')
     ap.add_argument('--tag', default='run')
+    ap.add_argument('--hoi-labels', default=None,
+                    help='hoi_frame_labels.parquet：输入面板叠加中文红框语义标注')
+    ap.add_argument('--hand-boxes', default=None,
+                    help='grounding/hand_boxes.parquet：红框来源（缺省则只标语义不画框）')
     ap.add_argument('--actions', default=None,
                     help='label_actions.py 输出的 .actions.json（提供则把动作/VLM复核/任务烧进画面）')
     ap.add_argument('--task-label', default=None, help='任务语义文字（烧进画面右上）')
@@ -257,6 +261,16 @@ def main():
         plt.close(fig)
         return buf
 
+    hoi_disp = hboxes = None
+    if args.hoi_labels:
+        import pandas as pd
+        _lab = pd.read_parquet(args.hoi_labels)
+        hoi_disp = {'camera' + str(int(nm == 'camera1')): _lab for nm in ()} if False else _lab
+        hoi_disp_ts = _lab['timestamp'].to_numpy()
+        hb = args.hand_boxes
+        hboxes = pd.read_parquet(hb) if hb and Path(hb).exists() else None
+        from render_hoi_review import put_text as _pt
+
     out_dir = Path(args.out_root) / f"{args.tag}_{datetime.now():%Y%m%d_%H%M%S}"
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f'[viz] {len(names)} 输入 + 世界3D'
@@ -271,6 +285,20 @@ def main():
             r, c = divmod(i, cols)
             x0, y0 = c * (vw + GAP), r * (vh + GAP)
             img = v['frames'][t].copy()
+            if hoi_disp is not None:
+                tw = float(args.seg_start) + t / 15.0
+                row = hoi_disp.iloc[min(int(np.searchsorted(hoi_disp_ts, tw)), len(hoi_disp) - 1)]
+                Hf, Wf = img.shape[:2]
+                if hboxes is not None:
+                    cam_key = 'L' if nm == 'camera0' else 'R'
+                    bs = hboxes[(hboxes.camera == cam_key)
+                                & (np.abs(hboxes.frame_t - tw) < 0.06)]
+                    for _, hb_ in bs.iterrows():
+                        p1 = (int(hb_.x0 * Wf), int(hb_.y0 * Hf))
+                        p2 = (int(hb_.x1 * Wf), int(hb_.y1 * Hf))
+                        cv2.rectangle(img, p1, p2, (0, 0, 255), 2)
+                        lab = f"{'左手' if hb_.hand == 'left' else '右手'}: {row[f'{hb_.hand}_display']}"
+                        _pt(img, lab, (max(2, p1[0]), max(18, p1[1] - 8)), (0, 0, 255), 17, 'cn')
             st = v['st']
             _draw_ee_overlay(img, st['state'][t, :3], st['state'][t, 3:6],
                              st['state'][t, 6], bool(st['valid'][t, 0]),
