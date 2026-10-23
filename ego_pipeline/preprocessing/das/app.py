@@ -105,7 +105,8 @@ def _watch(proc, out_dir, mode):
             break
         time.sleep(1)
     # 找该模式最新时间戳目录里的视频
-    cands = sorted((out_dir / 'viz').glob(f'{mode}_*/multiview.mp4'))
+    cands = sorted((out_dir / 'viz').glob(f'{mode}*/multiview.mp4'),
+                   key=lambda p: ('+hoi' not in str(p), str(p)))  # 匹配含+hoi版且优先
     review = sorted((out_dir / 'structured/hoi_fusion/review_videos').glob('*_review.mp4'))
     if review:
         _job['videos'] = [str(p) for p in review]
