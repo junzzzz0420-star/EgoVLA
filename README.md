@@ -27,9 +27,9 @@
 把 ego 视频转成**世界坐标系双手末端 14DoF 轨迹**，用来训练 VLA，再看开环测试。
 
 <p align="center">
-  <img src="docs/assets/das/rig6_multiview.gif" width="92%" alt="自采 DAS-Ego 六目重建：六路输入 + 世界系双手 3D">
+  <img src="docs/assets/das/hoi_annotated.gif" width="92%" alt="中文红框手-物交互语义标注">
   <br>
-  <em>自采数据（DAS-Ego 六目鱼眼 + IMU）：六路输入面板叠加手部建模，下方为 IMU 增强的世界系双手 3D 轨迹</em>
+  <em>自采数据端到端效果：红框追踪双手 + 中文语义标注（拿起手机 → 持握手机链），含手部建模与世界系 3D 面板</em>
 </p>
 
 <p align="center">
@@ -145,6 +145,12 @@ Windows 路径一键导入 EgoCap mcap（自动转换为 DAS 兼容目录后即�
 | rig6 | 0.00265 | −76% |
 
 自采数据最终转换出的 Pi0.5 训练 episode（世界系 14DoF state/action + 视频）：
+
+<p align="center">
+  <img src="docs/assets/das/rig6_multiview.gif" width="92%" alt="DAS-Ego 六目重建">
+  <br>
+  <em>DAS-Ego 六目鱼眼 + IMU 重建：六路输入面板叠加手部建模，下方为 IMU 增强的世界系双手 3D 轨迹</em>
+</p>
 
 <p align="center">
   <img src="docs/assets/das/pi05_episode.gif" width="72%" alt="自采数据生成的 Pi0.5 episode 可视化">
