@@ -201,7 +201,7 @@ input[type=number],input[type=text],select{{width:100%;color:var(--text);backgro
  </section>
  <section class="panel control-card"><div class="section-head"><span class="num">02</span><b>运行参数</b><span>CONFIG</span></div>
   <label class="field"><span class="field-name">任务描述 / 语义提示</span><input type="text" id="task" value="" placeholder="例如：双手配合组装工件"></label>
-  <div class="split"><label class="field"><span class="field-name">窗口起点（秒）</span><input type="number" id="start" value="2.4" step="0.1" min="0"></label><label class="field"><span class="field-name">分析时长（秒）</span><input type="number" id="dur" value="5" step="0.5" min="1" max="60"></label></div>
+  <div class="split"><label class="field"><span class="field-name">窗口起点（秒）</span><input type="number" id="start" value="2.4" step="0.1" min="0"></label><label class="field"><span class="field-name">分析时长（秒，可自由设置）</span><input type="number" id="dur" value="5" step="0.5" min="0.5"></label></div>
   <div class="toggle-grid"><label class="toggle"><input type="checkbox" id="audit_fill" checked><span>掉帧检查<br>自动补帧</span></label><label class="toggle"><input type="checkbox" id="hoi" checked><span>红框语义<br>交互标注</span></label><label class="toggle"><input type="checkbox" id="vlm"><span>VLM 动作<br>复核</span></label><label class="toggle"><input type="checkbox" id="vlm_open"><span>开放动作<br>自动描述</span></label></div>
   <button id="run" onclick="run()">开始运行</button><div class="hint" style="margin-top:9px">参考耗时：单目 3–4 分钟 · 双目约 8 分钟 · 六目 25–30 分钟；缓存命中通常少于 1 分钟。</div>
  </section>
@@ -269,9 +269,11 @@ async function pollImport(){{
    document.getElementById('impstat').textContent+='\\n✅ 已加入数据源下拉（拉到 EgoCap已转换 · '+j.name+'/），可直接选运行';
  }} }}
 async function run(){{
+ const start=parseFloat(document.getElementById('start').value),duration=parseFloat(document.getElementById('dur').value);
+ if(!Number.isFinite(start)||start<0||!Number.isFinite(duration)||duration<=0){{alert('起点必须 ≥ 0，时长必须 > 0');return;}}
  const body={{mode, mcap:document.getElementById('mcap').value,
-  start:parseFloat(document.getElementById('start').value),
-  duration:parseFloat(document.getElementById('dur').value),
+  start:start,
+  duration:duration,
   task:document.getElementById('task').value.trim(),
   vlm:document.getElementById('vlm').checked,
   audit_fill:document.getElementById('audit_fill').checked,
@@ -334,16 +336,23 @@ def api_run():
     with _lock:
         if _job['proc'] is not None:
             return jsonify(ok=False, error='已有任务在运行')
-        req = request.get_json()
+        req = request.get_json() or {}
         mode, mcap = req.get('mode'), req.get('mcap')
-        start, duration = float(req.get('start', 2.4)), float(req.get('duration', 5))
+        try:
+            start = float(req.get('start', 2.4))
+            duration = float(req.get('duration', 5))
+        except (TypeError, ValueError):
+            return jsonify(ok=False, error='起点和时长必须是数字')
         task = (req.get('task') or '').strip() or None
         vlm = bool(req.get('vlm'))
         vlm_open = bool(req.get('vlm_open'))
         audit_fill = bool(req.get('audit_fill'))
         hoi = bool(req.get('hoi'))
-        if mode not in ('mono', 'stereo', 'rig6') or not Path(mcap).exists():
+        if (mode not in ('mono', 'stereo', 'rig6') or not mcap
+                or not Path(mcap).exists()):
             return jsonify(ok=False, error='参数无效')
+        if start < 0 or duration <= 0:
+            return jsonify(ok=False, error='起点必须 ≥ 0，时长必须 > 0')
         # 预检时长：mcap 用其本身，已转换目录用 camera0.mp4
         probe_target = str(Path(mcap) / 'camera0.mp4') if not mcap.endswith('.mcap') else mcap
         probe = subprocess.run(
@@ -354,13 +363,16 @@ def api_run():
             total = float(probe.stdout.strip())
         except ValueError:
             total = 0.0
-        if total and start + duration > total * 0.95:
+        if total and (start >= total or start + duration > total + 0.05):
             return jsonify(ok=False,
                            error=f'窗口({start}~{start + duration}s)超出该录制时长({total:.1f}s)，请调小起点/时长')
         src_arg = ['--mcap', mcap] if mcap.endswith('.mcap') else ['--input-export', mcap]
         _job['last_export'] = mcap if not mcap.endswith('.mcap') else None
-        out = OUT_ROOT / f"{Path(mcap).stem[:40]}_{mode}" if mcap.endswith('.mcap') \
-            else OUT_ROOT / f"egocap_{Path(mcap).name}_{mode}"
+        # 时间窗口必须进入目录键；否则改变起点/时长时会误用第一次运行的 5 秒缓存。
+        token = lambda v: f'{v:.2f}'.replace('-', 'm').replace('.', 'p')
+        window_key = f't{token(start)}_d{token(duration)}'
+        base = Path(mcap).stem[:40] if mcap.endswith('.mcap') else f'egocap_{Path(mcap).name}'
+        out = OUT_ROOT / f'{base}_{mode}_{window_key}'
         tag = uuid.uuid4().hex[:6]
         _job.update(proc=None, log=[], mode=mode, out=out, done=False,
                     video=None, error=None, started=tag)

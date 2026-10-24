@@ -135,6 +135,7 @@ def main():
 
     # 3) 逐目重建管线
     parquets = {}
+    view_videos = {}
     ref = cams[0]
     if not args.skip_pipeline:
         env_export = {'TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD': '1',
@@ -147,17 +148,24 @@ def main():
         for cam in cams:
             cam_cut = rig_in / f'{cam}_rig_{t0:.2f}s_{t1:.2f}s.mp4'
             cam_out = out / 'views' / cam
-            g = sorted(cam_out.rglob('file-000.parquet'))
-            if g:
+            # pipeline 会按输入视频 stem 建子目录；只复用当前时间窗口的产物，
+            # 不能从 camera 目录全局取第一个 file-000（会把旧 5 秒窗口当成新结果）。
+            product_root = cam_out / cam_cut.stem
+            g = sorted(product_root.rglob('file-000.parquet'))
+            vg = sorted(product_root.rglob('file-000.mp4'))
+            if g and vg:
                 parquets[cam] = g[0]
+                view_videos[cam] = vg[0]
                 continue
             run([PY, '-m', 'cli', 'pipeline',
                  '--input', cam_cut, '--output', cam_out, '--num_gpus', '1', '--test',
                  '--long_video_threshold_s', '1000000', '--per_video_lerobot',
                  '--delete_temp', 'yes'], cwd=REPO, env={**os.environ, **env_export})
-            found = sorted(cam_out.rglob('file-000.parquet'))
-            if found:
+            found = sorted(product_root.rglob('file-000.parquet'))
+            found_video = sorted(product_root.rglob('file-000.mp4'))
+            if found and found_video:
                 parquets[cam] = found[0]
+                view_videos[cam] = found_video[0]
             elif cam == ref:
                 raise SystemExit(f'{cam}(参考目): 管线未产出 lerobot_v3 —— 该窗口参考视角'
                                  f'无有效手部帧，请换起点/时长或录制')
@@ -165,7 +173,14 @@ def main():
                 print(f'[multiview] {cam}: 本窗口无有效手部帧，跳过该视角', flush=True)
     else:
         for cam in cams:
-            parquets[cam] = sorted((out / 'views' / cam).rglob('file-000.parquet'))[0]
+            cam_cut = rig_in / f'{cam}_rig_{t0:.2f}s_{t1:.2f}s.mp4'
+            product_root = out / 'views' / cam / cam_cut.stem
+            found = sorted(product_root.rglob('file-000.parquet'))
+            found_video = sorted(product_root.rglob('file-000.mp4'))
+            if not found or not found_video:
+                raise SystemExit(f'--skip-pipeline 但当前窗口无缓存: {product_root}')
+            parquets[cam] = found[0]
+            view_videos[cam] = found_video[0]
 
     # 4) 融合（单目直接用参考目；被跳过的目不参与；双/六目走融合）
     cams = [c for c in cams if c in parquets]          # 剔除无产物视角
@@ -204,9 +219,7 @@ def main():
     # 6) 可视化：N 输入面板(各带手部建模) + 世界系 3D（IMU 增强融合轨迹）
     #    有 .actions.json 时把动作/VLM复核/任务烧进画面顶部语义条。
     #    输出到 <out>/viz_<mode>_<时间戳>/，不覆盖历史，便于跨模式/多次对比。
-    ref_video = sorted((out / 'views' / ref).rglob('file-000.mp4'))[0]
-    view_args = [f'{c}={sorted((out / "views" / c).rglob("file-000.mp4"))[0]},{parquets[c]}'
-                 for c in cams]
+    view_args = [f'{c}={view_videos[c]},{parquets[c]}' for c in cams]
     # 同一次运行始终复用一个主视频目录；--hoi 完成后直接覆盖其中的
     # multiview.mp4，避免同时留下未标注版和 +hoi 版两个主视频。
     viz_dir = out / 'viz' / f'{args.mode}_{datetime.now():%Y%m%d_%H%M%S}'
@@ -270,7 +283,7 @@ def main():
             'mode': args.mode, 'seg_start': t0, 'fused': str(Path(fused).resolve()),
             'views': [
                 {'name': c,
-                 'video': str(sorted((out / 'views' / c).rglob('file-000.mp4'))[0].resolve()),
+                 'video': str(Path(view_videos[c]).resolve()),
                  'parquet': str(Path(parquets[c]).resolve())}
                 for c in cams
             ],
