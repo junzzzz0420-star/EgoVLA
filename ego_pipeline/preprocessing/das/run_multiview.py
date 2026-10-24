@@ -261,8 +261,29 @@ def main():
         if args.task:
             hoi_viz_args += ['--task-label', args.task]
         run(hoi_viz_args)
-        print(f'[OK] 主运行视频已叠加中文红框语义: {out}/viz/{args.mode}+hoi_*/multiview.mp4',
-              flush=True)
+        # 持久化人工复核重渲染所需的全部输入。复核器只消费这个上下文，
+        # 不从目录名猜参数；人工版作为新版本保存，原机器候选保持可追溯。
+        from review_workflow import CONTEXT_NAME, save_context
+        save_context(out / CONTEXT_NAME, {
+            'schema_version': '1.0', 'run_dir': str(out.resolve()),
+            'structured_dir': str(sd.resolve()), 'export': str(export.resolve()),
+            'mode': args.mode, 'seg_start': t0, 'fused': str(Path(fused).resolve()),
+            'views': [
+                {'name': c,
+                 'video': str(sorted((out / 'views' / c).rglob('file-000.mp4'))[0].resolve()),
+                 'parquet': str(Path(parquets[c]).resolve())}
+                for c in cams
+            ],
+            'actions': str(act_json.resolve()) if act_json.exists() else None,
+            'task_label': args.task,
+            'main_video': str((viz_dir / 'multiview.mp4').resolve()),
+            'candidate_annotations': str((sd / 'hoi_fusion/hoi_annotations.json').resolve()),
+            'candidate_frame_labels': str((sd / 'hoi_fusion/hoi_frame_labels.parquet').resolve()),
+            'hand_boxes': str((sd / 'grounding/hand_boxes.parquet').resolve()),
+            'review_version': 0, 'status': 'pending_review',
+        })
+        print(f'[OK] 主运行视频已叠加中文红框语义: {viz_dir}/multiview.mp4', flush=True)
+        print(f'[OK] 人工复核上下文: {out / CONTEXT_NAME}', flush=True)
 
     print(f'\n[OK] 成品: {out}/viz/{args.mode}_<时间戳>/multiview.mp4 + {out}/pi05')
 

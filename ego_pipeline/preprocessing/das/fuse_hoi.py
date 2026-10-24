@@ -511,8 +511,9 @@ def build(sd: Path, out_dir: Path, decisions: list | None = None):
             e['start_frame'] = int(fi[frames_between(t0, t1)[0]])
             e['end_frame'] = int(fi[frames_between(t0, t1)[1]])
             e['trajectory_rows'] = list(frames_between(t0, t1))
-            e['verification_status'] = 'human_reviewed'
             e['needs_review'] = dec['action'] == 'keep_reviewing'
+            e['verification_status'] = ('pending_review' if e['needs_review']
+                                        else 'human_reviewed')
             e['conflicts'] = [] if dec['action'] == 'confirm' else e['conflicts']
             repair_log.append({'event_id': dec['event_id'], 'status': 'applied',
                                'action': dec['action'], 'reviewer': dec['reviewer']})

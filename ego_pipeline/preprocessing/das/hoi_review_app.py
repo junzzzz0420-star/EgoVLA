@@ -18,7 +18,10 @@ import argparse
 import base64
 import datetime
 import json
+import os
 import re
+import threading
+import time
 from pathlib import Path
 
 import cv2
@@ -26,7 +29,9 @@ import numpy as np
 import pandas as pd
 from flask import Flask, jsonify, request
 
-HAND_CN = {'left': '左手', 'right': '右手'}
+from review_workflow import apply_decisions, load_context
+
+HAND_CN = {'left': '左手', 'right': '右手', 'unknown': '未知手'}
 HAND_COLOR = {'left': (80, 220, 80), 'right': (60, 160, 255)}
 SEM_CN = {'candidate_object_grasp': '抓取(候选)', 'candidate_object_transport': '搬运(候选)',
           'candidate_object_rotate': '旋转物体(候选)', 'candidate_approach': '接近(候选)',
@@ -59,7 +64,9 @@ table{border-collapse:collapse;background:#fff}td,th{border:1px solid #ccc;paddi
 .tag{display:inline-block;background:#eef;border-radius:4px;padding:1px 6px;margin:1px}
 .sec{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;margin:10px 0}
 img{border:1px solid #999;margin:2px}h2{color:#234}code{background:#eee;padding:1px 4px}
-button{background:#2a6;border:none;color:#fff;padding:8px 22px;font-size:15px;cursor:pointer}</style>"""
+button{background:#2a6;border:none;color:#fff;padding:8px 22px;font-size:15px;cursor:pointer}
+.done{color:#16834d;font-weight:bold}.pending{color:#c26a00;font-weight:bold}
+.nav{display:inline-block;background:#345;color:#fff;border-radius:5px;padding:7px 12px;text-decoration:none}</style>"""
 
 
 def cn(v, table):
@@ -71,14 +78,18 @@ def b64(img):
     return 'data:image/jpeg;base64,' + base64.b64encode(buf).decode()
 
 
-def evidence_frames(export, ev, hands, objs, offset):
+def evidence_frames(sources, ev, hands, objs):
     out = []
     for k in (0, .5, 1):
         t = ev['start_time'] + (ev['end_time'] - ev['start_time']) * k
         pair = {}
         for cam_i, key in ((0, 'L'), (1, 'R')):
-            fi = int(round((offset + t) * 30))
-            cap = cv2.VideoCapture(str(export / f'camera{cam_i}.mp4'))
+            source, offset = sources.get(key, (None, 0.0))
+            if source is None:
+                continue
+            cap = cv2.VideoCapture(str(source))
+            fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+            fi = int(round((offset + t) * fps))
             cap.set(cv2.CAP_PROP_POS_FRAMES, fi)
             ok, fr = cap.read()
             cap.release()
@@ -103,35 +114,65 @@ def evidence_frames(export, ev, hands, objs, offset):
     return out
 
 
-def make_app(sd: Path, export: Path):
+def make_app(sd: Path, export: Path, context_path: Path | None = None):
     app = Flask(__name__)
     hf = sd / 'hoi_fusion'
     ann = json.loads((hf / 'hoi_annotations.json').read_text())
     events = ann['events']
     hands = pd.read_parquet(sd / 'grounding/hand_boxes.parquet')
     objs = pd.read_parquet(sd / 'grounding/object_tracks.parquet')
-    m = re.search(r'_rig_([\d.]+)s_',
-                  Path(json.loads((sd / 'visual_context/video_alignment.json')
-                                  .read_text())['videos']['left']['path']).name)
+    alignment = json.loads((sd / 'visual_context/video_alignment.json').read_text())
+    m = re.search(r'_rig_([\d.]+)s_', Path(alignment['videos']['left']['path']).name)
     offset = float(m.group(1)) if m else 0.0
+    # 优先回源到 30fps 高清视频；源目录不可用时使用已严格对齐的窗口视频。
+    if (export / 'camera0.mp4').exists():
+        sources = {'L': (export / 'camera0.mp4', offset),
+                   'R': (export / 'camera1.mp4', offset)}
+    else:
+        vids = alignment.get('videos', {})
+        sources = {
+            'L': (Path(vids['left']['path']), 0.0) if vids.get('left') else (None, 0.0),
+            'R': (Path(vids['right']['path']), 0.0) if vids.get('right') else (None, 0.0),
+        }
+    decision_path = hf / 'review_decisions.jsonl'
+    repair_lock = threading.Lock()
+
+    def latest_decisions():
+        latest = {}
+        if decision_path.exists():
+            for line in decision_path.read_text(encoding='utf-8').splitlines():
+                if line.strip():
+                    dec = json.loads(line)
+                    latest[dec['event_id']] = dec
+        return latest
 
     @app.get('/')
     def index():
+        decided = latest_decisions()
         rows = ''
         for i, e in enumerate(events):
             tags = ''.join("<span class='tag'>" + CONFLICT_CN.get(c, c) + '</span>'
                            for c in e['conflicts']) or '—'
             det = cn(e.get('object_detected'), OBJ_CN) if e.get('object_detected') else '—'
+            state = ("<span class='done'>已人工裁决</span>" if e['event_id'] in decided
+                     else ("<span class='pending'>待核验</span>" if e['needs_review']
+                           else "例行可复核"))
             rows += (f"<tr><td><a href='/event/{i}'>{e['event_id']}</a></td>"
                      f"<td>{e['start_time']}–{e['end_time']}s</td>"
-                     f"<td>{HAND_CN[e['hand_side']]}</td>"
+                     f"<td>{HAND_CN.get(e['hand_side'], e['hand_side'])}</td>"
                      f"<td>{cn(e['object_category'], OBJ_CN)}"
                      f"<br><small>检测:{det}({cn(e.get('object_resolution'), RESOLUTION_CN)})</small></td>"
                      f"<td>{cn(e['semantic_action'], SEM_CN)}</td>"
-                     f"<td><small>{tags}</small></td></tr>")
-        return (f"<h2>HOI 审核队列（共 {len(events)} 个事件）</h2>{STYLE}"
+                     f"<td><small>{tags}</small></td><td>{state}</td></tr>")
+        pending = sum(e['event_id'] not in decided for e in events if e['needs_review'])
+        version = load_context(context_path).get('review_version', 0) if context_path else 0
+        return (f"<h2>HOI 人工复核 · 候选不是事实</h2>{STYLE}"
+                f"<p><a class='nav' href='http://localhost:7861/'>← 返回主界面</a></p>"
+                f"<div class='sec'>待核验 <b>{pending}</b> 个；已裁决 <b>{len(decided)}</b> 个；"
+                f"当前人工版本 <b>v{version:03d}</b>。机器冲突与弱证据保持未知/待核验，"
+                f"只有人工提交后才生成权威修复版。</div>"
                 f"<table><tr><th>事件</th><th>时间范围</th><th>手</th>"
-                f"<th>物体(大模型说 / 检测器判)</th><th>动作语义</th><th>冲突原因</th></tr>"
+                f"<th>物体(大模型说 / 检测器判)</th><th>动作语义</th><th>冲突原因</th><th>状态</th></tr>"
                 f"{rows}</table>"
                 f"<p>点击事件号进入审核 → 看双目画面 → 表单提交裁决。"
                 f"看不清就选「❓ 看不清/不确定」。</p>")
@@ -139,7 +180,7 @@ def make_app(sd: Path, export: Path):
     @app.get('/event/<int:i>')
     def event_page(i):
         e = events[i]
-        frames = evidence_frames(export, e, hands, objs, offset)
+        frames = evidence_frames(sources, e, hands, objs)
         imgs = ''
         for fr in frames:
             imgs += f"<div style='display:inline-block;vertical-align:top'><b>t={fr['t']}s</b><br>"
@@ -156,7 +197,15 @@ def make_app(sd: Path, export: Path):
         conflicts = ''.join(f"<span class='tag'>{CONFLICT_CN.get(c, c)}</span>"
                             for c in e['conflicts']) or '无'
         gev = e.get('grasp_evidence', {})
-        return f"""{STYLE}<h2>{e['event_id']} · {HAND_CN[e['hand_side']]} · {e['start_time']}–{e['end_time']}s</h2>
+        decided = latest_decisions().get(e['event_id'])
+        prior = (f"<div class='sec done'>该事件已有人工裁决：{decided['action']} · "
+                 f"{decided['reviewer']} · {decided['review_time']}。再次提交会生成新版本，"
+                 f"并以最后一次裁决为准。</div>") if decided else ''
+        hand_opts = ''.join(
+            f"<option value='{h}' {'selected' if h == e['hand_side'] else ''}>{name}</option>"
+            for h, name in HAND_CN.items())
+        return f"""{STYLE}<h2>{e['event_id']} · {HAND_CN.get(e['hand_side'], e['hand_side'])} · {e['start_time']}–{e['end_time']}s</h2>
+{prior}
 <div class='sec'><b>① 大模型(VLM)的判断：</b>物体「{cn(e['object_category'], OBJ_CN)}」，
 动作「{e['visual_action']}」，接触「{cn(e['contact_state'], CONTACT_CN)}」，
 时间估计 {e.get('visual_time_boundaries')}</div>
@@ -170,6 +219,7 @@ def make_app(sd: Path, export: Path):
 <div class='sec'><b>⑥ 你的裁决：</b>
 <form method='post' action='/event/{i}'>
  裁决: <select name='action'>{opts}</select>（看图后选一个）<br><br>
+ 改手别时选: <select name='hand'>{hand_opts}</select><br>
  改物体时填: <input name='object' placeholder='如 手机 或 留空'>（无交互/不确定不用填；填 null 表示无物体）<br>
  改动作时填: <input name='semantic' placeholder='如 抓取/持握/释放/键盘触碰'>（仅改动作时填）<br>
  改边界时填: 起点 <input name='t0' size=5 value='{e['start_time']}'> 秒 ～
@@ -185,33 +235,59 @@ def make_app(sd: Path, export: Path):
         f = request.form
         if not f.get('reason') or not f.get('reviewer'):
             return '「理由」和「审核者」必填', 400
+        valid_actions = {v for v, _ in ACT_CN}
+        if f.get('action') not in valid_actions:
+            return '无效的裁决动作', 400
+        if f['action'] == 'change_object' and not f.get('object'):
+            return '选择“改物体”时必须填写物体', 400
+        if f['action'] == 'change_action' and not f.get('semantic'):
+            return '选择“改动作”时必须填写动作', 400
+        try:
+            t0, t1 = float(f['t0']), float(f['t1'])
+        except (KeyError, TypeError, ValueError):
+            return '时间边界必须是数字', 400
+        if not 0 <= t0 < t1:
+            return '时间边界必须满足 0 ≤ 起点 < 终点', 400
+        meta = ann.get('meta', {})
         dec = {
             'event_id': e['event_id'],
             'original_prediction': {
                 'object': e['object_category'], 'hand': e['hand_side'],
-                'semantic': (f.get('semantic') or e['semantic_action']),
+                'semantic': e['semantic_action'],
                 'bounds': [e['start_time'], e['end_time']]},
             'action': f['action'],
             'reviewed_label': {
-                'hand': e['hand_side'],
+                'hand': (f.get('hand') or e['hand_side']),
                 'object': (None if f.get('object') == 'null' else
                            (f.get('object') or e['object_category'])),
                 'semantic': (f.get('semantic') or e['semantic_action']),
-                'bounds': [float(f['t0']), float(f['t1'])]},
+                'bounds': [t0, t1]},
             'correction_type': f['action'],
             'evidence_frame_ids': [round(e['start_time'] + k *
                                          (e['end_time'] - e['start_time']), 2) for k in (0, .5, 1)],
             'reviewer': f['reviewer'],
             'review_time': datetime.datetime.now().isoformat(timespec='seconds'),
             'correction_reason': f['reason'],
-            'source_version': ann['meta']['fusion_rules_version'] + '+' +
-                              ann['meta']['schema_version'],
+            'source_version': (str(meta.get('fusion_rules_version', 'unknown')) + '+' +
+                               str(meta.get('schema_version', 'unknown'))),
             'provenance': 'human_review'}
-        with (hf / 'review_decisions.jsonl').open('a') as fp:
-            fp.write(json.dumps(dec, ensure_ascii=False) + '\n')
+        with repair_lock:
+            with decision_path.open('a', encoding='utf-8') as fp:
+                fp.write(json.dumps(dec, ensure_ascii=False) + '\n')
+            if context_path is None:
+                return ('已记录裁决，但当前以旧式参数启动，缺少重渲染上下文。'
+                        '请从 7861 主界面进入人工复核。', 409)
+            try:
+                updated, _ = apply_decisions(context_path)
+            except Exception as exc:
+                return (f"{STYLE}<h3>⚠️ 裁决已安全记录，但自动回写失败</h3>"
+                        f"<pre>{str(exc)}</pre>"
+                        f"<p><a href='/event/{i}'>返回后重试提交</a></p>", 500)
         act_cn = dict(ACT_CN).get(f['action'], f['action'])
-        return (f"{STYLE}<h3>✅ 已记录：{e['event_id']} → {act_cn}</h3>"
+        return (f"{STYLE}<h3>✅ 已记录并完成三产物同步：{e['event_id']} → {act_cn}</h3>"
                 f"<p>裁决人 {f['reviewer']}，理由「{f['reason']}」</p>"
+                f"<p>人工版本 v{updated['review_version']:03d}：JSON、逐帧标签和主视频均已重建。"
+                f" <a class='nav' href='http://localhost:7861/'>返回主界面查看新视频</a></p>"
                 f"<p><a href='/'>← 继续审下一个</a></p>"
                 f"<details><summary>查看原始记录(JSON)</summary><code>"
                 f"{json.dumps(dec, ensure_ascii=False)}</code></details>")
@@ -222,11 +298,32 @@ def make_app(sd: Path, export: Path):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--structured-dir', required=True)
-    ap.add_argument('--export', required=True)
+    ap.add_argument('--structured-dir', required=False)
+    ap.add_argument('--export', required=False)
+    ap.add_argument('--context', default=None,
+                    help='review_context.json；从主界面启动时自动回写并重渲染')
     ap.add_argument('--port', type=int, default=7863)
+    ap.add_argument('--parent-pid', type=int, default=None,
+                    help='主界面进程 PID；主界面退出后复核服务自动退出')
     args = ap.parse_args()
-    make_app(Path(args.structured_dir), Path(args.export)).run(
+    context_path = Path(args.context).resolve() if args.context else None
+    if context_path:
+        ctx = load_context(context_path)
+        sd, export = Path(ctx['structured_dir']), Path(ctx['export'])
+    elif args.structured_dir and args.export:
+        sd, export = Path(args.structured_dir), Path(args.export)
+    else:
+        ap.error('请提供 --context，或同时提供 --structured-dir 与 --export')
+    if args.parent_pid:
+        def parent_watch():
+            while True:
+                time.sleep(2)
+                try:
+                    os.kill(args.parent_pid, 0)
+                except OSError:
+                    os._exit(0)
+        threading.Thread(target=parent_watch, daemon=True).start()
+    make_app(sd, export, context_path).run(
         host='0.0.0.0', port=args.port, debug=False)
 
 

@@ -22,13 +22,17 @@ import sys
 import threading
 import time
 import uuid
+import socket
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, redirect, request, send_file
+
+from review_workflow import find_run_from_video, infer_context, load_context
 
 REPO = Path(__file__).resolve().parents[3]   # repository root
 PY = Path(os.environ.get('EGO2LEROBOT_PY') or sys.executable)
 RUNNER = Path(__file__).resolve().parent / 'run_multiview.py'
+REVIEW_APP = Path(__file__).resolve().parent / 'hoi_review_app.py'
 OUT_ROOT = REPO / 'examples' / 'das_app_runs'
 # Semicolon-separated glob patterns, e.g.
 # EGO2LEROBOT_MCAP_GLOBS='/data/ego/**/*.mcap;/mnt/d/ego/**/*.mcap'
@@ -50,7 +54,9 @@ _job = {'proc': None, 'log': [], 'mode': None, 'out': None, 'done': False,
         'video': None, 'error': None, 'started': None}
 _imp = {'busy': False, 'log': [], 'done': True, 'ok': False, 'error': None,
         'name': None}
+_review = {'proc': None, 'context': None, 'log': []}
 _lock = threading.Lock()
+_review_lock = threading.Lock()
 
 
 def list_mcaps() -> list[tuple[str, str]]:
@@ -79,6 +85,54 @@ def list_videos() -> list[tuple[str, str]]:
         t = time.strftime('%m-%d %H:%M', time.localtime(v.stat().st_mtime))
         out.append((f'{v.parent.parent.name}/{v.parent.name}  ({t})', str(v)))
     return out
+
+
+def _start_review_server(context_path: Path) -> None:
+    """确保 7863 指向所选运行；切换运行时只重启复核页，不影响主任务。"""
+    context_path = context_path.resolve()
+    with _review_lock:
+        proc = _review.get('proc')
+        if (proc is not None and proc.poll() is None
+                and _review.get('context') == str(context_path)):
+            return
+        if proc is not None and proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+        env = dict(os.environ)
+        env['PYTHONUNBUFFERED'] = '1'
+        proc = subprocess.Popen(
+            [str(PY), str(REVIEW_APP), '--context', str(context_path), '--port', '7863',
+             '--parent-pid', str(os.getpid())],
+            cwd=str(REPO), env=env, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, text=True)
+        _review.update(proc=proc, context=str(context_path), log=[])
+
+        def pump():
+            for line in proc.stdout:
+                with _review_lock:
+                    _review['log'].append(line.rstrip())
+                    _review['log'] = _review['log'][-500:]
+        threading.Thread(target=pump, daemon=True).start()
+
+    deadline = time.time() + 12
+    while time.time() < deadline:
+        if proc.poll() is not None:
+            raise RuntimeError('人工复核服务启动失败：' + '\n'.join(_review['log'][-20:]))
+        try:
+            with socket.create_connection(('127.0.0.1', 7863), timeout=.25):
+                return
+        except OSError:
+            time.sleep(.15)
+    raise RuntimeError('人工复核服务启动超时')
+
+
+def _context_for_video(raw: str) -> tuple[Path, dict]:
+    video = Path(raw)
+    run = find_run_from_video(video, REPO / 'examples')
+    return infer_context(run, video)
 
 
 def _watch(proc, out_dir, mode):
@@ -122,6 +176,7 @@ def index():
  select{{width:100%}} .row{{display:flex;gap:12px;margin:10px 0;align-items:center;flex-wrap:wrap}}
  button#run{{background:#1f7fd4;color:#fff;border:0;border-radius:8px;padding:12px 34px;font-size:15px;cursor:pointer}}
  button#run:disabled{{background:#33526b;cursor:wait}}
+ button#reviewbtn{{background:#b86a12;color:#fff;border:0;border-radius:8px;padding:11px 20px;font-size:14px;cursor:pointer}}
  #errmsg{{color:#ff8d8d;background:#3a1520;border:1px solid #7c2b3a;border-radius:8px;padding:8px 12px;display:none;margin:0 0 8px;white-space:pre-wrap;font-size:13px}}
  pre#log{{background:#0a0f14;border:1px solid #1d2933;border-radius:8px;padding:12px;height:60vh;min-height:360px;overflow:auto;font-size:12.5px;white-space:pre-wrap;margin:0}}
  video{{width:100%;border-radius:10px;margin-top:12px;background:#000}}
@@ -154,6 +209,8 @@ def index():
  <div class="lbl">历史结果（选一条点播放，随时回看）</div>
  <div class="row"><select id="hist" style="flex:1">{vopts}</select>
   <button onclick="playHist()" style="background:#2c3d4d;color:#dfe7ee;border:0;border-radius:8px;padding:10px 22px;cursor:pointer">播放</button></div>
+ <div class="row"><button id="reviewbtn" onclick="openReview()">人工复核 / 裁决回写</button>
+  <span id="reviewstat" style="font-size:12px;color:#d7a45c">机器候选 → 证据核验 → 人工权威版本</span></div>
  <div class="lbl" style="margin-top:14px">耗时参考：单目≈3-4分 双目≈8分 六目≈25-30分；同源同模式重跑复用缓存，通常&lt;1分钟</div>
 </div>
 <div class="right">
@@ -170,7 +227,31 @@ document.querySelectorAll('.mode').forEach(e=>e.onclick=()=>{{
 async function playHist(){{
  const v=document.getElementById('vid');
  const p=document.getElementById('hist').value; if(!p)return;
- v.src='/video?p='+encodeURIComponent(p); v.style.display='block'; v.play(); v.scrollIntoView({{behavior:'smooth'}});}}
+ v.dataset.path=p; v.src='/video?p='+encodeURIComponent(p); v.style.display='block'; v.play();
+ v.scrollIntoView({{behavior:'smooth'}});}}
+function currentVideoPath(){{
+ const v=document.getElementById('vid');
+ return v.dataset.path||document.getElementById('hist').value||'';}}
+function openReview(){{
+ const p=currentVideoPath(); if(!p){{alert('请先运行或选择一条历史结果');return;}}
+ document.getElementById('reviewstat').textContent='正在打开复核队列；提交后主视频会自动刷新…';
+ window.open('/review/open?video='+encodeURIComponent(p),'hoi_review');
+ pollReview(p,0);}}
+async function pollReview(source,lastVersion){{
+ try{{
+  const j=await (await fetch('/api/review/status?video='+encodeURIComponent(source))).json();
+  const s=document.getElementById('reviewstat');
+  if(!j.ok){{s.textContent='复核状态：'+j.error;return;}}
+  s.textContent='复核状态：'+(j.status==='human_reviewed'?'人工版 v'+String(j.review_version).padStart(3,'0'):'待人工核验');
+  if(j.review_version>lastVersion&&j.main_video){{
+   const v=document.getElementById('vid');v.dataset.path=j.main_video;
+   v.src='/video?p='+encodeURIComponent(j.main_video)+'&rev='+Date.now();v.style.display='block';
+   const r=document.getElementById('main-result');r.style.display='block';
+   r.textContent='人工复核版已同步：'+j.main_video; v.play(); lastVersion=j.review_version;
+  }}
+  setTimeout(()=>pollReview(source,lastVersion),3000);
+ }}catch(e){{document.getElementById('reviewstat').textContent='复核状态读取失败：'+e;}}
+}}
 async function doImport(){{
  const p=document.getElementById('import_path').value.trim(); if(!p){{alert('请填写 bag 目录或 mcap 路径');return;}}
  const r=await fetch('/api/import',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{path:p}})}});
@@ -214,10 +295,38 @@ async function poll(){{
  else em.style.display='none';
  if(!j.done){{setTimeout(poll,2000);return;}}
  document.getElementById('run').disabled=false;
- if(j.video){{const v=document.getElementById('vid');v.src='/video?p='+encodeURIComponent(j.video);v.style.display='block';
+ if(j.video){{const v=document.getElementById('vid');v.dataset.path=j.video;v.src='/video?p='+encodeURIComponent(j.video);v.style.display='block';
    const r=document.getElementById('main-result');r.style.display='block';r.textContent='主运行视频已保存：'+j.video;}}
  }}
 </script></body></html>'''
+
+
+@app.get('/review/open')
+def open_review():
+    """从主界面一键启动所选结果的复核页，并在新标签打开。"""
+    try:
+        context_path, _ = _context_for_video(request.args.get('video', ''))
+        _start_review_server(context_path)
+    except Exception as exc:
+        return (f'<meta charset="utf-8"><h3>无法打开人工复核</h3>'
+                f'<pre>{html.escape(str(exc))}</pre><a href="/">返回主界面</a>', 400)
+    host = request.host.split(':', 1)[0]
+    return redirect(f'http://{host}:7863/')
+
+
+@app.get('/api/review/status')
+def api_review_status():
+    try:
+        _, ctx = _context_for_video(request.args.get('video', ''))
+        return jsonify(ok=True, status=ctx.get('status', 'pending_review'),
+                       review_version=int(ctx.get('review_version') or 0),
+                       main_video=ctx.get('main_video'),
+                       annotations=(ctx.get('repaired_annotations') or
+                                    ctx.get('candidate_annotations')),
+                       frame_labels=(ctx.get('repaired_frame_labels') or
+                                     ctx.get('candidate_frame_labels')))
+    except Exception as exc:
+        return jsonify(ok=False, error=str(exc)), 400
 
 
 @app.post('/api/run')
