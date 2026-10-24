@@ -59,14 +59,14 @@ ACT_CN = [('confirm', '✅ 确认标签正确'), ('change_object', '✏️ 改�
           ('mark_unknown', '❓ 看不清/不确定'), ('keep_reviewing', '⏸ 保留待复核')]
 OBJ_CN = {'mouse': '鼠标', 'keyboard': '键盘', 'cell phone': '手机', 'remote': '遥控器/手柄',
           'book': '书', 'cup': '杯子', 'scissors': '剪刀', 'laptop': '笔记本电脑'}
-STYLE = """<style>body{font-family:'Microsoft YaHei',sans-serif;background:#f5f6f8;margin:20px}
-table{border-collapse:collapse;background:#fff}td,th{border:1px solid #ccc;padding:6px 12px}
-.tag{display:inline-block;background:#eef;border-radius:4px;padding:1px 6px;margin:1px}
-.sec{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;margin:10px 0}
-img{border:1px solid #999;margin:2px}h2{color:#234}code{background:#eee;padding:1px 4px}
-button{background:#2a6;border:none;color:#fff;padding:8px 22px;font-size:15px;cursor:pointer}
-.done{color:#16834d;font-weight:bold}.pending{color:#c26a00;font-weight:bold}
-.nav{display:inline-block;background:#345;color:#fff;border-radius:5px;padding:7px 12px;text-decoration:none}</style>"""
+STYLE = """<style>
+:root{--bg:#080d18;--panel:#121c2c;--panel2:#0c1523;--line:#273650;--text:#eaf1fa;--muted:#91a2b8;--blue:#4ca9ff;--green:#44d5a2;--orange:#f0a34a}
+*{box-sizing:border-box}body{font-family:'Microsoft YaHei',Inter,system-ui,sans-serif;background:radial-gradient(circle at 10% 0,#14294a 0,transparent 28%),var(--bg);color:var(--text);margin:0 auto;padding:24px;width:min(1500px,100%);line-height:1.55}
+h2{font-size:22px;margin:0 0 14px}p{color:var(--muted)}table{width:100%;border-collapse:separate;border-spacing:0;background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden}td,th{border-bottom:1px solid #21304a;padding:10px 12px;text-align:left;font-size:12px;vertical-align:top}th{background:#162238;color:#adc0d8;font-size:11px;letter-spacing:.04em}tr:last-child td{border-bottom:0}tr:hover td{background:#121f32}a{color:#72bfff}
+.tag{display:inline-block;background:#322413;color:#ffc477;border:1px solid #65451c;border-radius:999px;padding:2px 7px;margin:2px;font-size:10px}.sec{background:linear-gradient(155deg,#142033,#101827);border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin:11px 0;box-shadow:0 10px 28px #0002}
+img{border:1px solid #344863;border-radius:9px;margin:4px;max-width:100%;height:auto}code,pre{background:#080f1b;border:1px solid #22314a;border-radius:7px;padding:5px;color:#c7d7e9}input,select{background:#0a1220;color:var(--text);border:1px solid #34445e;border-radius:8px;padding:8px 10px;margin:4px;outline:none}input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #4ca9ff22}button{background:linear-gradient(135deg,#1d86df,#5664ed);border:none;border-radius:9px;color:#fff;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer;margin-left:8px}.done{color:var(--green);font-weight:bold}.pending{color:var(--orange);font-weight:bold}.nav{display:inline-block;background:#24344c;color:#fff;border:1px solid #344963;border-radius:8px;padding:8px 13px;text-decoration:none}.nav:hover,button:hover{filter:brightness(1.12)}small{color:var(--muted)}
+@media(max-width:760px){body{padding:12px}td,th{padding:7px;font-size:10px}table{display:block;overflow-x:auto}input{max-width:100%}}
+</style>"""
 
 
 def cn(v, table):
@@ -166,7 +166,7 @@ def make_app(sd: Path, export: Path, context_path: Path | None = None):
                      f"<td><small>{tags}</small></td><td>{state}</td></tr>")
         pending = sum(e['event_id'] not in decided for e in events if e['needs_review'])
         version = load_context(context_path).get('review_version', 0) if context_path else 0
-        return (f"<h2>HOI 人工复核 · 候选不是事实</h2>{STYLE}"
+        return (f"{STYLE}<h2>HOI 人工复核 · 候选不是事实</h2>"
                 f"<p><a class='nav' href='http://localhost:7861/'>← 返回主界面</a></p>"
                 f"<div class='sec'>待核验 <b>{pending}</b> 个；已裁决 <b>{len(decided)}</b> 个；"
                 f"当前人工版本 <b>v{version:03d}</b>。机器冲突与弱证据保持未知/待核验，"

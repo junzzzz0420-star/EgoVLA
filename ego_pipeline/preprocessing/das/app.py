@@ -163,72 +163,70 @@ def index():
     vopts = '\n'.join(f'<option value="{html.escape(p)}">{html.escape(n)}</option>'
                       for n, p in vids) or '<option value="">（暂无历史结果）</option>'
     return f'''<!doctype html><html><head><meta charset="utf-8">
-<title>DAS 多目重建</title><style>
- body{{font-family:"Microsoft YaHei",system-ui,sans-serif;background:#10161c;color:#dfe7ee;margin:0;padding:18px}}
- .card{{background:#18222b;border:1px solid #243240;border-radius:12px;padding:22px;width:97vw;max-width:1720px;margin:0 auto}}
- h1{{font-size:22px;margin:0 0 6px}} .sub{{color:#8fa3b5;font-size:13px;margin-bottom:14px}}
- .grid{{display:grid;grid-template-columns:420px 1fr;gap:20px;margin-top:12px}}
- .modes{{display:flex;gap:10px;margin:10px 0}}
- .mode{{flex:1;border:2px solid #2c3d4d;border-radius:10px;padding:12px 8px;cursor:pointer;text-align:center;background:#1b2833}}
- .mode b{{display:block;font-size:16px;margin-bottom:4px}} .mode span{{font-size:12px;color:#8fa3b5}}
- .mode.on{{border-color:#37b3ff;background:#14324a}} .mode.on b{{color:#7cc9ff}}
- input[type=number],input[type=text],select{{background:#0d141b;color:#dfe7ee;border:1px solid #2c3d4d;border-radius:8px;padding:8px;font-size:14px}}
- select{{width:100%}} .row{{display:flex;gap:12px;margin:10px 0;align-items:center;flex-wrap:wrap}}
- button#run{{background:#1f7fd4;color:#fff;border:0;border-radius:8px;padding:12px 34px;font-size:15px;cursor:pointer}}
- button#run:disabled{{background:#33526b;cursor:wait}}
- button#reviewbtn{{background:#b86a12;color:#fff;border:0;border-radius:8px;padding:11px 20px;font-size:14px;cursor:pointer}}
- #errmsg{{color:#ff8d8d;background:#3a1520;border:1px solid #7c2b3a;border-radius:8px;padding:8px 12px;display:none;margin:0 0 8px;white-space:pre-wrap;font-size:13px}}
- pre#log{{background:#0a0f14;border:1px solid #1d2933;border-radius:8px;padding:12px;height:60vh;min-height:360px;overflow:auto;font-size:12.5px;white-space:pre-wrap;margin:0}}
- video{{width:100%;border-radius:10px;margin-top:12px;background:#000}}
- .lbl{{font-size:12px;color:#8fa3b5;margin:6px 0 4px}}
-</style></head><body><div class="card">
-<h1>DAS 多目重建 · 双手空间轨迹</h1>
-<div class="sub">mcap → 去畸变 → 多目重建 → IMU 增强(重力对齐+去抖) → N 输入面板 + 世界系 3D；每次结果独立目录，不覆盖</div>
-<div class="grid">
-<div class="left">
- <div class="modes">
-  <div class="mode" data-m="mono"><b>单目</b><span>camera0 · 1 输入</span></div>
-  <div class="mode" data-m="stereo"><b>双目</b><span>camera0+1 · 2 输入</span></div>
-  <div class="mode on" data-m="rig6"><b>六目</b><span>全部 6 目</span></div>
- </div>
- <div class="lbl">数据源（DAS 原始 mcap / EgoCap 已转换目录）</div>
- <select id="mcap">{opts}</select>
- <div class="lbl" style="margin-top:12px">导入本地 EgoCap 数据（同事的 bag，转好即出现在上方下拉）</div>
- <div class="row"><input type="text" id="import_path" placeholder="/mnt/d/work/ego/LYZ/egocap_xxx/bag 或 bag_X.mcap" style="flex:1;min-width:150px">
-  <button id="impbtn" onclick="doImport()" style="background:#2c7a4b;color:#fff;border:0;border-radius:8px;padding:10px 18px;cursor:pointer">导入并转换</button></div>
- <div id="impstat" style="font-size:12px;color:#8fa3b5;white-space:pre-wrap"></div>
- <div class="row">任务描述(语义标注) <input type="text" id="task" value="" placeholder="留空=默认；如: 双手配合拧螺丝组装工件" style="flex:1;min-width:140px"></div>
- <div class="row">窗口起点(秒) <input type="number" id="start" value="2.4" step="0.1" min="0" style="width:90px">
-  时长(秒) <input type="number" id="dur" value="5" step="0.5" min="1" max="60" style="width:90px"></div>
- <div class="row"><button id="run" onclick="run()">运行</button>
-  <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="audit_fill" checked> 掉帧检查+补帧</label>
-  <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="hoi" checked> 主视频叠加中文红框语义(约+3分钟)</label>
-  <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="vlm"> 大模型复核动作</label>
-  <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="vlm_open"> 开放动作识别(自动任务描述)</label>
-  <label style="font-size:12px;color:#8fa3b5"><input type="checkbox" id="autoscroll" checked> 日志自动滚动</label></div>
- <div class="lbl">历史结果（选一条点播放，随时回看）</div>
- <div class="row"><select id="hist" style="flex:1">{vopts}</select>
-  <button onclick="playHist()" style="background:#2c3d4d;color:#dfe7ee;border:0;border-radius:8px;padding:10px 22px;cursor:pointer">播放</button></div>
- <div class="row"><button id="reviewbtn" onclick="openReview()">人工复核 / 裁决回写</button>
-  <span id="reviewstat" style="font-size:12px;color:#d7a45c">机器候选 → 证据核验 → 人工权威版本</span></div>
- <div class="lbl" style="margin-top:14px">耗时参考：单目≈3-4分 双目≈8分 六目≈25-30分；同源同模式重跑复用缓存，通常&lt;1分钟</div>
-</div>
-<div class="right">
- <div id="errmsg"></div>
- <pre id="log">等待运行…</pre>
- <div class="lbl" style="margin-top:10px">主运行视频（手部建模 + 红色文字/红框语义注释）</div>
- <video id="vid" controls style="display:none"></video>
- <div id="main-result" style="display:none;margin-top:8px;font-size:12px;color:#8fa3b5"></div>
-</div>
-</div></div><script>
-let mode='rig6';
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DAS · EGO 数据工作台</title><style>
+:root{{--bg:#080d18;--panel:#111827;--panel2:#151f31;--line:#25324a;--text:#edf3fb;--muted:#8fa0b8;--blue:#4ca9ff;--blue2:#2177e8;--green:#39d39f;--orange:#f2a84b;--danger:#ff6b7a}}
+*{{box-sizing:border-box}} body{{font-family:"Microsoft YaHei",Inter,system-ui,sans-serif;background:radial-gradient(circle at 12% 0,#142747 0,transparent 28%),var(--bg);color:var(--text);margin:0;min-height:100vh}}
+button,input,select{{font:inherit}} .shell{{width:min(1880px,100%);margin:auto;padding:22px}}
+.topbar{{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:16px}}
+.brand{{display:flex;align-items:center;gap:14px}} .brandmark{{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;font-weight:800;letter-spacing:.06em;background:linear-gradient(145deg,#2898ff,#645bff);box-shadow:0 10px 30px #147ee644}}
+.eyebrow{{font-size:11px;letter-spacing:.18em;color:#6fbaff;font-weight:700}} h1{{font-size:22px;margin:3px 0 0;letter-spacing:.01em}} .sub{{color:var(--muted);font-size:12px;margin-top:4px}}
+.online{{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #244b42;background:#102621;border-radius:999px;color:#80e9c4;font-size:12px}} .online i{{width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 12px var(--green)}}
+.pipeline{{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}} .pipe{{position:relative;background:#0d1523;border:1px solid #1c2940;border-radius:10px;padding:9px 11px;color:#9eacc0;font-size:11px}} .pipe b{{display:block;color:#dfe9f7;font-size:12px;margin-bottom:2px}} .pipe::after{{content:'›';position:absolute;right:-8px;top:10px;color:#47617f;z-index:2}} .pipe:last-child::after{{display:none}}
+.workspace{{display:grid;grid-template-columns:420px minmax(0,1fr);gap:16px;align-items:start}} .sidebar{{display:grid;gap:12px;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;padding-right:3px}}
+.panel{{background:linear-gradient(160deg,#131d2d,#0f1725);border:1px solid var(--line);border-radius:16px;box-shadow:0 14px 40px #0003}}
+.control-card{{padding:17px}} .section-head{{display:flex;align-items:center;gap:10px;margin-bottom:14px}} .section-head .num{{display:grid;place-items:center;width:25px;height:25px;border-radius:7px;background:#173a5b;color:#75c2ff;font-weight:700;font-size:11px}} .section-head b{{font-size:14px}} .section-head span:last-child{{margin-left:auto;color:var(--muted);font-size:11px}}
+.field{{display:block;margin:10px 0}} .field-name{{display:block;font-size:11px;color:var(--muted);margin:0 0 6px}}
+input[type=number],input[type=text],select{{width:100%;color:var(--text);background:#09111e;border:1px solid #293954;border-radius:9px;padding:10px 11px;outline:none;transition:.2s}} input:focus,select:focus{{border-color:var(--blue);box-shadow:0 0 0 3px #278fff20}}
+.mode-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}} .mode{{border:1px solid #2b3950;border-radius:10px;padding:10px 5px;cursor:pointer;text-align:center;background:#0c1523;transition:.2s}} .mode b{{display:block;font-size:13px}} .mode span{{font-size:9px;color:var(--muted)}} .mode:hover{{transform:translateY(-1px);border-color:#46617e}} .mode.on{{border-color:var(--blue);background:linear-gradient(160deg,#12365a,#10233d);box-shadow:inset 0 0 0 1px #4ca9ff55}} .mode.on b{{color:#8dccff}}
+.inline{{display:flex;gap:8px;align-items:center}} .inline .grow{{flex:1;min-width:0}} .split{{display:grid;grid-template-columns:1fr 1fr;gap:9px}}
+.btn{{border:0;border-radius:9px;padding:10px 14px;color:#fff;cursor:pointer;white-space:nowrap;transition:.18s}} .btn:hover{{filter:brightness(1.1);transform:translateY(-1px)}} .btn-secondary{{background:#24334a}} .btn-import{{background:#176547}} .btn-review{{background:linear-gradient(135deg,#c5721a,#9c5011)}}
+#run{{width:100%;border:0;border-radius:10px;padding:12px 18px;background:linear-gradient(135deg,var(--blue2),#645bff);color:white;font-weight:700;cursor:pointer;box-shadow:0 9px 24px #2177e833}} #run:disabled{{background:#304157;box-shadow:none;cursor:wait}}
+.toggle-grid{{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0}} .toggle{{display:flex;align-items:flex-start;gap:7px;padding:8px;border:1px solid #22314a;border-radius:9px;background:#0b1422;color:#bac7d7;font-size:11px;line-height:1.35}} .toggle input{{accent-color:var(--blue);margin-top:2px}}
+.hint{{font-size:10px;color:#73849d;line-height:1.55}} #impstat,#reviewstat{{font-size:11px;color:#83a1bb;white-space:pre-wrap;line-height:1.45}}
+.main{{display:grid;gap:12px;min-width:0}} .result-card{{padding:17px}} .result-head{{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}} .result-head h2{{font-size:16px;margin:0 0 4px}} .result-head p{{font-size:11px;color:var(--muted);margin:0}} .candidate{{font-size:10px;padding:5px 9px;border-radius:999px;color:#ffd296;border:1px solid #694820;background:#2b2114}}
+#errmsg{{color:#ffb0b7;background:#35131c;border:1px solid #7c2b3a;border-radius:9px;padding:9px 12px;display:none;margin-bottom:10px;white-space:pre-wrap;font-size:12px}}
+.video-stage{{position:relative;display:grid;place-items:center;min-height:440px;border:1px solid #24334a;border-radius:13px;overflow:hidden;background:linear-gradient(135deg,#080d15,#0c1523)}} .empty{{text-align:center;color:#6f829b;padding:50px}} .empty-icon{{width:66px;height:66px;margin:0 auto 14px;border:1px solid #2d4664;border-radius:20px;display:grid;place-items:center;font-size:25px;color:#69b9ff;background:#10243b}} .empty b{{display:block;color:#aebfd2;font-size:14px;margin-bottom:6px}} video{{display:none;width:100%;max-height:72vh;background:#000}}
+#main-result{{display:none;margin-top:10px;padding:9px 11px;background:#0c1726;border-radius:8px;color:#8fa9c3;font-size:11px;word-break:break-all}}
+.log-card{{overflow:hidden}} .log-card summary{{cursor:pointer;list-style:none;padding:13px 16px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:space-between}} .log-card summary::-webkit-details-marker{{display:none}} .log-card summary span{{font-weight:400;color:var(--muted)}} pre#log{{background:#070c13;border-top:1px solid #1d2a3e;padding:13px;height:230px;overflow:auto;font:11px/1.55 "Cascadia Mono",Consolas,monospace;white-space:pre-wrap;margin:0;color:#b6c3d2}}
+@media(max-width:1050px){{.workspace{{grid-template-columns:1fr}}.sidebar{{position:static;max-height:none;overflow:visible}}.pipeline{{grid-template-columns:repeat(3,1fr)}}.video-stage{{min-height:300px}}}} @media(max-width:620px){{.shell{{padding:12px}}.topbar{{align-items:flex-start}}.online{{display:none}}.pipeline{{grid-template-columns:1fr 1fr}}.workspace{{gap:10px}}.toggle-grid{{grid-template-columns:1fr}}}}
+</style></head><body><div class="shell">
+<header class="topbar"><div class="brand"><div class="brandmark">DAS</div><div><div class="eyebrow">EGO DATA WORKSPACE</div><h1>双手空间轨迹工作台</h1><div class="sub">多目重建、语义理解与人工复核的一体化流水线</div></div></div><div class="online"><i></i>本地服务运行中</div></header>
+<div class="pipeline"><div class="pipe"><b>01 数据输入</b>MCAP / EgoCap</div><div class="pipe"><b>02 几何处理</b>去畸变与同步</div><div class="pipe"><b>03 手部重建</b>多目轨迹融合</div><div class="pipe"><b>04 IMU 增强</b>重力对齐与去抖</div><div class="pipe"><b>05 语义核验</b>VLM + 检测 + 3D</div><div class="pipe"><b>06 人工裁决</b>版本化回写</div></div>
+<div class="workspace"><aside class="sidebar">
+ <section class="panel control-card"><div class="section-head"><span class="num">01</span><b>数据与视角</b><span>INPUT</span></div>
+  <div class="mode-grid"><div class="mode" data-m="mono"><b>单目</b><span>CAMERA 0</span></div><div class="mode" data-m="stereo"><b>双目</b><span>CAMERA 0 + 1</span></div><div class="mode on" data-m="rig6"><b>六目</b><span>FULL RIG</span></div></div>
+  <label class="field"><span class="field-name">数据源</span><select id="mcap">{opts}</select></label>
+  <label class="field"><span class="field-name">导入本地 EgoCap 数据</span><div class="inline"><input class="grow" type="text" id="import_path" placeholder="bag 目录或 .mcap 路径"><button class="btn btn-import" id="impbtn" onclick="doImport()">导入</button></div></label><div id="impstat"></div>
+ </section>
+ <section class="panel control-card"><div class="section-head"><span class="num">02</span><b>运行参数</b><span>CONFIG</span></div>
+  <label class="field"><span class="field-name">任务描述 / 语义提示</span><input type="text" id="task" value="" placeholder="例如：双手配合组装工件"></label>
+  <div class="split"><label class="field"><span class="field-name">窗口起点（秒）</span><input type="number" id="start" value="2.4" step="0.1" min="0"></label><label class="field"><span class="field-name">分析时长（秒）</span><input type="number" id="dur" value="5" step="0.5" min="1" max="60"></label></div>
+  <div class="toggle-grid"><label class="toggle"><input type="checkbox" id="audit_fill" checked><span>掉帧检查<br>自动补帧</span></label><label class="toggle"><input type="checkbox" id="hoi" checked><span>红框语义<br>交互标注</span></label><label class="toggle"><input type="checkbox" id="vlm"><span>VLM 动作<br>复核</span></label><label class="toggle"><input type="checkbox" id="vlm_open"><span>开放动作<br>自动描述</span></label></div>
+  <button id="run" onclick="run()">开始运行</button><div class="hint" style="margin-top:9px">参考耗时：单目 3–4 分钟 · 双目约 8 分钟 · 六目 25–30 分钟；缓存命中通常少于 1 分钟。</div>
+ </section>
+ <section class="panel control-card"><div class="section-head"><span class="num">03</span><b>结果与复核</b><span>REVIEW</span></div>
+  <label class="field"><span class="field-name">历史运行结果</span><select id="hist">{vopts}</select></label>
+  <div class="inline"><button class="btn btn-secondary" onclick="playHist()">播放结果</button><button class="btn btn-review" id="reviewbtn" onclick="openReview()">人工复核</button><label class="toggle" style="margin-left:auto;padding:7px"><input type="checkbox" id="autoscroll" checked><span>日志跟随</span></label></div>
+  <div id="reviewstat" style="margin-top:10px">机器候选 → 证据核验 → 人工权威版本</div>
+ </section>
+</aside><main class="main">
+ <section class="panel result-card"><div class="result-head"><div><h2>主运行结果</h2><p>手部建模、世界系轨迹与红色语义标注统一输出</p></div><span class="candidate">机器候选 · 人工审核优先</span></div><div id="errmsg"></div>
+  <div class="video-stage"><div class="empty" id="empty"><div class="empty-icon">▶</div><b>等待运行结果</b><span>完成运行或从历史记录中选择视频</span></div><video id="vid" controls></video></div><div id="main-result"></div>
+ </section>
+ <details class="panel log-card" open><summary>运行日志 <span>实时输出 · 支持折叠</span></summary><pre id="log">等待运行…</pre></details>
+</main></div></div><script>
+let mode='rig6',reviewPollToken=0;
 document.querySelectorAll('.mode').forEach(e=>e.onclick=()=>{{
  document.querySelectorAll('.mode').forEach(x=>x.classList.remove('on'));e.classList.add('on');mode=e.dataset.m;}});
+function showVideo(p,label,autoplay=true){{
+ const v=document.getElementById('vid');document.getElementById('empty').style.display='none';
+ v.dataset.path=p;v.src='/video?p='+encodeURIComponent(p)+'&rev='+Date.now();v.style.display='block';
+ const r=document.getElementById('main-result');r.style.display='block';r.textContent=label+'：'+p;
+ if(autoplay)v.play().catch(()=>{{}});return v;}}
 async function playHist(){{
- const v=document.getElementById('vid');
  const p=document.getElementById('hist').value; if(!p)return;
- v.dataset.path=p; v.src='/video?p='+encodeURIComponent(p); v.style.display='block'; v.play();
- v.scrollIntoView({{behavior:'smooth'}});}}
+ const v=showVideo(p,'历史结果');v.scrollIntoView({{behavior:'smooth',block:'center'}});}}
 function currentVideoPath(){{
  const v=document.getElementById('vid');
  return v.dataset.path||document.getElementById('hist').value||'';}}
@@ -236,20 +234,21 @@ function openReview(){{
  const p=currentVideoPath(); if(!p){{alert('请先运行或选择一条历史结果');return;}}
  document.getElementById('reviewstat').textContent='正在打开复核队列；提交后主视频会自动刷新…';
  window.open('/review/open?video='+encodeURIComponent(p),'hoi_review');
- pollReview(p,0);}}
-async function pollReview(source,lastVersion){{
+ const token=++reviewPollToken;pollReview(p,null,token);}}
+async function pollReview(source,baseVersion,token){{
+ if(token!==reviewPollToken)return;
  try{{
   const j=await (await fetch('/api/review/status?video='+encodeURIComponent(source))).json();
   const s=document.getElementById('reviewstat');
   if(!j.ok){{s.textContent='复核状态：'+j.error;return;}}
   s.textContent='复核状态：'+(j.status==='human_reviewed'?'人工版 v'+String(j.review_version).padStart(3,'0'):'待人工核验');
-  if(j.review_version>lastVersion&&j.main_video){{
-   const v=document.getElementById('vid');v.dataset.path=j.main_video;
-   v.src='/video?p='+encodeURIComponent(j.main_video)+'&rev='+Date.now();v.style.display='block';
-   const r=document.getElementById('main-result');r.style.display='block';
-   r.textContent='人工复核版已同步：'+j.main_video; v.play(); lastVersion=j.review_version;
+  if(baseVersion===null){{
+   baseVersion=j.review_version;
+   if(j.status==='human_reviewed'&&j.main_video&&j.main_video!==currentVideoPath())showVideo(j.main_video,'当前人工复核版');
+  }}else if(j.review_version>baseVersion&&j.main_video){{
+   showVideo(j.main_video,'人工复核版已同步');s.textContent='复核完成：人工版 v'+String(j.review_version).padStart(3,'0');return;
   }}
-  setTimeout(()=>pollReview(source,lastVersion),3000);
+  setTimeout(()=>pollReview(source,baseVersion,token),5000);
  }}catch(e){{document.getElementById('reviewstat').textContent='复核状态读取失败：'+e;}}
 }}
 async function doImport(){{
@@ -281,6 +280,8 @@ async function run(){{
  const r=await fetch('/api/run',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(body)}});
  const j=await r.json(); if(!j.ok){{alert(j.error);return;}}
  document.getElementById('run').disabled=true; document.getElementById('vid').style.display='none';
+ const empty=document.getElementById('empty');empty.style.display='block';
+ empty.querySelector('b').textContent='正在生成结果';empty.querySelector('span').textContent='可在下方展开日志查看实时进度';
  document.getElementById('errmsg').style.display='none';
  poll();}}
 async function poll(){{
@@ -295,8 +296,7 @@ async function poll(){{
  else em.style.display='none';
  if(!j.done){{setTimeout(poll,2000);return;}}
  document.getElementById('run').disabled=false;
- if(j.video){{const v=document.getElementById('vid');v.dataset.path=j.video;v.src='/video?p='+encodeURIComponent(j.video);v.style.display='block';
-   const r=document.getElementById('main-result');r.style.display='block';r.textContent='主运行视频已保存：'+j.video;}}
+ if(j.video)showVideo(j.video,'主运行视频已保存',false);
  }}
 </script></body></html>'''
 
