@@ -567,6 +567,31 @@ def build(sd: Path, out_dir: Path, decisions: list | None = None):
                 sp = demo[f'{hand}_trans_speed'].iloc[r]
                 if np.isfinite(sp) and sp > 0.30:
                     inter[r] = 'APPROACH'
+        # 手机持握延续链：拿起→持握(延续至张开/放下)→放下(数帧)
+        held = [''] * len(ts)
+        pu = [e for e in kept if e['hand_side'] == hand
+              and e['semantic_action'] == 'pick_up_phone']
+        pdn = [e for e in kept if e['hand_side'] == hand
+               and e['semantic_action'] == 'put_down_phone']
+        for e in pu:
+            r0, r1 = e['trajectory_rows']
+            for r in range(r0, min(r1 + 1, len(ts))):
+                held[r] = '拿起手机'
+            r = r1 + 1
+            while r < len(ts) and r - r1 <= 150:
+                if any(a['trajectory_rows'][0] <= r <= a['trajectory_rows'][1]
+                       for a in pdn):
+                    break
+                if poses[hand][r] == 'OPEN':
+                    for k in range(r, min(r + 3, len(ts))):
+                        held[k] = '放下手机'
+                    break
+                held[r] = '持握手机'
+                r += 1
+        for e in pdn:
+            for r in range(e['trajectory_rows'][0],
+                           min(e['trajectory_rows'][1] + 1, len(ts))):
+                held[r] = '放下手机'
         disp = []
         for r in range(len(ts)):
             p, i = poses[hand][r], inter[r]
@@ -580,7 +605,9 @@ def build(sd: Path, out_dir: Path, decisions: list | None = None):
                     break
             obj = OBJECT_CN.get(obj.lower(), obj)
             obj_ok = obj not in ('', 'None', 'nan', 'unknown_action', '无交互')
-            if interaction:
+            if held[r]:                      # 手机持握延续链优先（拿起/持握/放下）
+                core = held[r] + ' | 手机'
+            elif interaction:
                 core = INTERACTION_CN[interaction]
                 if any(e.get('interaction_action') == interaction
                        and e.get('interaction_status') == 'candidate'
