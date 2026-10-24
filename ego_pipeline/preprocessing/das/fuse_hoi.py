@@ -582,12 +582,8 @@ def build(sd: Path, out_dir: Path, decisions: list | None = None):
                 if any(a['trajectory_rows'][0] <= r <= a['trajectory_rows'][1]
                        for a in pdn):
                     break
-                # 连续>=4帧完全张开才确认放下；半开/换握姿(短暂张开)保持持握
-                if r + 4 <= len(ts) and all(poses[hand][k] == 'OPEN'
-                                            for k in range(r, r + 4)):
-                    for k in range(r, min(r + 4, len(ts))):
-                        held[k] = '放下手机'
-                    break
+                # 握手机时手型常为张开级伸展，pose 不可作为放下判据；
+                # 持握延续仅由 put_down 事件或时间上限终止
                 held[r] = '持握手机'
                 r += 1
         for e in pdn:
