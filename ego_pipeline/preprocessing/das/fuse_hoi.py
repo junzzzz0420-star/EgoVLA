@@ -582,8 +582,10 @@ def build(sd: Path, out_dir: Path, decisions: list | None = None):
                 if any(a['trajectory_rows'][0] <= r <= a['trajectory_rows'][1]
                        for a in pdn):
                     break
-                if poses[hand][r] == 'OPEN':
-                    for k in range(r, min(r + 3, len(ts))):
+                # 连续>=4帧完全张开才确认放下；半开/换握姿(短暂张开)保持持握
+                if r + 4 <= len(ts) and all(poses[hand][k] == 'OPEN'
+                                            for k in range(r, r + 4)):
+                    for k in range(r, min(r + 4, len(ts))):
                         held[k] = '放下手机'
                     break
                 held[r] = '持握手机'
