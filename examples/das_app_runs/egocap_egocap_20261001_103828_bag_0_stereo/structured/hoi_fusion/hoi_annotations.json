@@ -1,0 +1,286 @@
+{
+  "meta": {
+    "schema_version": "hoi-v1",
+    "fusion_rules_version": "v1+v2experimental(detector-first, GT 0/8 — 默认仍为保守仲裁)",
+    "generated_at": "2026-10-24T09:11:18.534514+00:00",
+    "inputs_md5": {
+      "/home/jun/Ego2LeRobot/examples/das_app_runs/egocap_egocap_20261001_103828_bag_0_stereo/structured/demonstration.parquet": "37e3d52efda96d74dac2b72f6455a034",
+      "/home/jun/Ego2LeRobot/examples/das_app_runs/egocap_egocap_20261001_103828_bag_0_stereo/structured/action_segments.json": "37c9843bb26c21bd4ab36777e74460a1",
+      "/home/jun/Ego2LeRobot/examples/das_app_runs/egocap_egocap_20261001_103828_bag_0_stereo/structured/visual_context/clip_manifest.json": "1c96bde01fc9c1cb75c5c56820a6057c",
+      "/home/jun/Ego2LeRobot/examples/das_app_runs/egocap_egocap_20261001_103828_bag_0_stereo/structured/visual_semantics/visual_predictions.json": "c370161734305ebdf491e184dff3c305"
+    },
+    "time_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+    "notes": "multimodal fusion CANDIDATES; primitives are auxiliary evidence only; not robot ground truth"
+  },
+  "events": [
+    {
+      "event_id": "hoi_0000",
+      "source_clip_ids": [
+        "clip_0000"
+      ],
+      "source_segment_ids": [],
+      "source_prediction_ids": [
+        "clip_0000_L_1",
+        "clip_0000_R_1"
+      ],
+      "start_time": 0.0,
+      "end_time": 1.1,
+      "visual_time_boundaries": [
+        0.0,
+        1.1
+      ],
+      "motion_time_boundaries": null,
+      "start_frame": 0,
+      "end_frame": 16,
+      "trajectory_rows": [
+        0,
+        16
+      ],
+      "hand_side": "right",
+      "object_category": null,
+      "object_category_alt": [],
+      "object_instance_local_id": "clip_0000::mouse",
+      "visual_action": "grasp",
+      "motion_primitives": [],
+      "semantic_action": "candidate_object_grasp",
+      "contact_state": "visible_contact",
+      "motion_contact_cue": 0.567,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 0.0,
+        "pinch_median": 0.567
+      },
+      "end_time_original": null,
+      "trajectory_reference": {
+        "parquet": "demonstration.parquet",
+        "rows": [
+          0,
+          16
+        ],
+        "timestamp_range": [
+          0.0,
+          1.067
+        ]
+      },
+      "evidence_frames": {
+        "video": [
+          1,
+          2,
+          3,
+          8,
+          9,
+          14,
+          16
+        ],
+        "video_timestamps": [
+          0.067,
+          0.133,
+          0.2,
+          0.533,
+          0.6,
+          0.933,
+          1.067
+        ],
+        "trajectory_rows": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ]
+      },
+      "camera_evidence": [
+        "L",
+        "R"
+      ],
+      "alignment_status": "verified",
+      "alignment_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+      "quality_status": {
+        "observed": 1.0
+      },
+      "conflicts": [
+        "object_vlm_detector_mismatch",
+        "primitive_visual_mismatch",
+        "weak_grasp_evidence"
+      ],
+      "needs_review": true,
+      "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "cell phone": {
+            "n": 4,
+            "dist_median": 0.831,
+            "iou_median": 0.0,
+            "near_ratio": 1.0,
+            "overlap_ratio": 0.0,
+            "corr_median": -0.428
+          },
+          "keyboard": {
+            "n": 56,
+            "dist_median": 0.575,
+            "iou_median": 0.032,
+            "near_ratio": 0.821,
+            "overlap_ratio": 0.179,
+            "corr_median": -0.056
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": null,
+      "object_resolution": "vlm_detector_mismatch",
+      "object_vlm_claim": "mouse",
+      "object_candidate": "mouse",
+      "object_source": "vlm_candidate",
+      "bimanual_same_object": true,
+      "possible_duplicate_of": []
+    },
+    {
+      "event_id": "hoi_0001",
+      "source_clip_ids": [
+        "clip_0000"
+      ],
+      "source_segment_ids": [
+        "L0"
+      ],
+      "source_prediction_ids": [
+        "clip_0000_L_0",
+        "clip_0000_R_0"
+      ],
+      "start_time": 0.133,
+      "end_time": 0.6,
+      "visual_time_boundaries": [
+        0.0,
+        1.1
+      ],
+      "motion_time_boundaries": [
+        0.133,
+        0.6
+      ],
+      "start_frame": 2,
+      "end_frame": 9,
+      "trajectory_rows": [
+        2,
+        9
+      ],
+      "hand_side": "left",
+      "object_category": "cell phone",
+      "object_category_alt": [],
+      "object_instance_local_id": "clip_0000::mouse",
+      "visual_action": "grasp",
+      "motion_primitives": [
+        "pinch"
+      ],
+      "semantic_action": "pick_up_phone",
+      "contact_state": "visible_contact",
+      "motion_contact_cue": 0.323,
+      "grasp_evidence": {
+        "low_pinch_frame_pct": 100.0,
+        "pinch_median": 0.323
+      },
+      "end_time_original": null,
+      "trajectory_reference": {
+        "parquet": "demonstration.parquet",
+        "rows": [
+          2,
+          9
+        ],
+        "timestamp_range": [
+          0.133,
+          0.6
+        ]
+      },
+      "evidence_frames": {
+        "video": [
+          1,
+          2,
+          3,
+          8,
+          9,
+          14,
+          16
+        ],
+        "video_timestamps": [
+          0.067,
+          0.133,
+          0.2,
+          0.533,
+          0.6,
+          0.933,
+          1.067
+        ],
+        "trajectory_rows": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      },
+      "camera_evidence": [
+        "L",
+        "R"
+      ],
+      "alignment_status": "verified",
+      "alignment_uncertainty": "+-16.7 ms video resampling (Step 2.1 verified mapping); vlm_time_estimate itself is a coarse model guess",
+      "quality_status": {
+        "observed": 1.0
+      },
+      "conflicts": [
+        "time_boundary_mismatch"
+      ],
+      "needs_review": true,
+      "verification_status": "pending_review",
+      "grounding": {
+        "per_class": {
+          "cell phone": {
+            "n": 4,
+            "dist_median": 0.91,
+            "iou_median": 0.0,
+            "near_ratio": 1.0,
+            "overlap_ratio": 0.0,
+            "corr_median": 0.927
+          },
+          "keyboard": {
+            "n": 36,
+            "dist_median": 1.018,
+            "iou_median": 0.02,
+            "near_ratio": 0.278,
+            "overlap_ratio": 0.028,
+            "corr_median": 0.1
+          }
+        },
+        "environment_classes_excluded": [
+          "laptop"
+        ]
+      },
+      "object_detected": "cell phone",
+      "object_resolution": "resolved",
+      "object_source": "detector",
+      "object_vlm_claim": "mouse",
+      "object_candidate": "cell phone",
+      "interaction_object": "cell phone",
+      "interaction_action": "pick_up_phone",
+      "interaction_action_cn": "拿起手机",
+      "semantic_action_before_interaction": "candidate_object_grasp",
+      "interaction_status": "grounded",
+      "bimanual_same_object": true,
+      "possible_duplicate_of": []
+    }
+  ]
+}
